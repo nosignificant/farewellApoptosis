@@ -10,8 +10,9 @@ public class p53Log : MonoBehaviour
     private bool isPlayerIn = false;
     [SerializeField] private float delay = 2f;
 
-    public Room room;
+    [Header("Room Settings")]
 
+    public string roomID;
     public Spawner linkedSpawner;
 
     public int chatLogLine = 0;
@@ -22,36 +23,9 @@ public class p53Log : MonoBehaviour
 
     void Start()
     {
-        room = Util.FindCurrentRoom(this.transform.position);
+        //p53 대사 위치는 바뀌지 않음, 플레이어 스탯 가져와서 플레이어 스탯에 따라 다른 대사를 하게끔 함 
+        roomID = Util.FindCurrentRoom(this.transform.position).roomID;
         linkedSpawner = Util.FindCurrentRoomSpawner(roomID);
-    }
-
-    IEnumerator Dialog()
-    {
-        for (int i = chatLogLine; i < currentRoomLines.Count; i++)
-        {
-            chatLog.Post(currentRoomLines[i]);
-            chatLogLine++;
-
-            float t = 0f;
-            while (t < delay)
-            {
-                if (!isPlayerIn) yield break;
-                t += Time.deltaTime;
-                yield return null;
-            }
-        }
-
-        if (currentRoomLines.Count == chatLogLine)
-        {
-            isDialogueFinished = true;
-
-            if (currentPlayer != null)
-            {
-                currentPlayer.AddVisitRecord(roomID);
-                Debug.Log($"{roomID} 대사 완료. 방문 횟수 증가.");
-            }
-        }
     }
 
     private void OnTriggerEnter(Collider other)
@@ -122,5 +96,33 @@ public class p53Log : MonoBehaviour
         }
 
         return "Default";
+    }
+
+    IEnumerator Dialog()
+    {
+        for (int i = chatLogLine; i < currentRoomLines.Count; i++)
+        {
+            chatLog.Post(currentRoomLines[i]);
+            chatLogLine++;
+
+            float t = 0f;
+            while (t < delay)
+            {
+                if (!isPlayerIn) yield break;
+                t += Time.deltaTime;
+                yield return null;
+            }
+        }
+
+        if (currentRoomLines.Count == chatLogLine)
+        {
+            isDialogueFinished = true;
+
+            if (currentPlayer != null)
+            {
+                currentPlayer.AddVisitRecord(roomID);
+                Debug.Log($"{roomID} 대사 완료. 방문 횟수 증가.");
+            }
+        }
     }
 }
