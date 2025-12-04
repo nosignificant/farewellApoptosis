@@ -26,7 +26,7 @@ public class EaterSelectorUI : MonoBehaviour
     {
         if (spawner == null) return;
         if (!spawner.isPlayerIn) return;
-        if (!spawner._spawnerHasCircuit) return;
+        if (!spawner.SpawnerHasCircuit) return;
         int delta = 0;
 
         if (Input.GetKeyDown(KeyCode.A)) delta = -1;

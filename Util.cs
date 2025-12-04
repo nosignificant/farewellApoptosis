@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 
 public static class Util
@@ -36,7 +37,7 @@ public static class Util
         return null;
     }
 
-    public static Spawner FindCurrentRoomSpawner(string roomID)
+    public static List<Spawner> FindCurrentRoomSpawner(string roomID)
     {
         return RoomManager.Instance.GetSpawnersInRoom(roomID);
     }

@@ -13,8 +13,7 @@ public class p53Log : MonoBehaviour
     [Header("Room Settings")]
 
     public string roomID;
-    public Spawner linkedSpawner;
-
+    public Spawner linkedSpanwer;
     public int chatLogLine = 0;
     public bool isDialogueFinished = false;
     private List<string> currentRoomLines;
@@ -25,7 +24,6 @@ public class p53Log : MonoBehaviour
     {
         //p53 대사 위치는 바뀌지 않음, 플레이어 스탯 가져와서 플레이어 스탯에 따라 다른 대사를 하게끔 함 
         roomID = Util.FindCurrentRoom(this.transform.position).roomID;
-        linkedSpawner = Util.FindCurrentRoomSpawner(roomID);
     }
 
     private void OnTriggerEnter(Collider other)
@@ -40,8 +38,8 @@ public class p53Log : MonoBehaviour
 
         if (currentPlayer != null)
         {
-            // 💡 수정 2: 방문 횟수(int) 대신 현재 상태 조건(string)을 가져옵니다.
-            string conditionKey = CheckCurrentCondition();
+            int playerVisited = currentPlayer.GetVisitCount(roomID);
+            string conditionKey = CheckCurrentCondition(playerVisited);
 
             Debug.Log($"Room: {roomID}, Condition: {conditionKey}");
 
@@ -78,25 +76,21 @@ public class p53Log : MonoBehaviour
     }
 
     // 💡 상태 체크 함수
-    string CheckCurrentCondition()
+    string CheckCurrentCondition(int visited)
     {
         if (roomID == "tut_01")
         {
-            // linkedSpawner가 할당되어 있다면 상태 확인
-            if (linkedSpawner != null && linkedSpawner.SpawnerHasCircuit)
-            {
-                return "Repaired";
-            }
+            if (visited == 0)
+                if (linkedSpanwer != null && linkedSpanwer.SpawnerHasCircuit)
+                    return "Repaired";
 
-            // Player의 static 변수 접근
             if (Player.circuit)
-            {
                 return "HasCircuit";
-            }
         }
 
         return "Default";
     }
+
 
     IEnumerator Dialog()
     {

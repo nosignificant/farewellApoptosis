@@ -47,10 +47,8 @@ public class Spawner : MonoBehaviour, IInteractable
     {
         currentRoom = Util.FindCurrentRoom(transform.position);
         if (SpawnerHasCircuit) AutoSpawn();
-        if (RoomManager.Instance != null)
-            RoomManager.Instance.RegisterSpawner(this);
-        else
-            Debug.LogError("RoomManager가 씬에 없습니다!");
+        if (currentRoom != null)
+            currentRoom.RegisterSpawner(this);
     }
 
     public void AutoSpawn()

@@ -12,7 +12,7 @@ public class Room : MonoBehaviour
 
     [Header("방 내부 생물 관리")]
     public List<Creature> activeCreatures = new List<Creature>();
-    public List<Spawner> activeSpawners = new List<Spawner>();
+    public List<Spawner> allSpawners = new List<Spawner>();
     public List<Food> activeFoods = new List<Food>();
     void Awake()
     {
@@ -38,7 +38,6 @@ public class Room : MonoBehaviour
 
     void Start()
     {
-        // 💡 핵심: Start에서 등록해야 매니저가 확실히 살아있습니다.
         if (RoomManager.Instance != null)
             RoomManager.Instance.RegisterRoom(this);
 
@@ -67,5 +66,13 @@ public class Room : MonoBehaviour
         }
     }
 
-
+    //각 방에 있는 스포너도 스스로를 등록함
+    public void RegisterSpawner(Spawner spawner)
+    {
+        if (!allSpawners.Contains(spawner))
+        {
+            allSpawners.Add(spawner);
+            Debug.Log($"Spawner registered to Room: {roomID}");
+        }
+    }
 }

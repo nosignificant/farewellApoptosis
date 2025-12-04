@@ -77,9 +77,9 @@ public class Player : MonoBehaviour
     {
         if (!isEaterSelectOpen || !Input.GetKeyDown(KeyCode.F)) return;
 
-        if (eaterSpawner != null)
+        if (Spawner != null)
         {
-            IInteractable interactable = eaterSpawner.GetComponent<IInteractable>();
+            IInteractable interactable = Spawner.GetComponent<IInteractable>();
 
             if (interactable != null)
             {

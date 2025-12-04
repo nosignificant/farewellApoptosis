@@ -135,7 +135,7 @@ public class Creature : MonoBehaviour
             }
         }
         if (friendCreatureIDs.Contains(other.CREATURE_ID))
-            if (!friends.contain(other)) friends.add(other);
+            if (!friends.Contains(other)) friends.Add(other);
     }
 
     // ---------------------- FOOD ACTION ------------------------
@@ -165,6 +165,7 @@ public class Creature : MonoBehaviour
     {
         // 💡 목표 거리 설정
         const float STOP_DISTANCE = 1.5f;
+        float distance = 0f;
 
         while (foodToEat != null && foodToEat.foodHealth > 0)
         {
@@ -176,7 +177,7 @@ public class Creature : MonoBehaviour
             // 1. 이동/정지 로직
             if (distance > STOP_DISTANCE)
             {
-                float distance = Vector3.Distance(this.transform.position, foodToEat.transform.position);
+                distance = Vector3.Distance(this.transform.position, foodToEat.transform.position);
                 Vector3 dir = Util.GetDirectionTo(this.transform, foodToEat.transform);
                 Util.towards(this.transform, speed, dir, foodSpeed);
                 yield return null; // 1프레임 대기 후
