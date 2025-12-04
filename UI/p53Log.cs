@@ -14,6 +14,7 @@ public class p53Log : MonoBehaviour
 
     public string roomID;
     public Spawner linkedSpanwer;
+    public Door linkedDoor;
     public int chatLogLine = 0;
     public bool isDialogueFinished = false;
     private List<string> currentRoomLines;
@@ -41,7 +42,7 @@ public class p53Log : MonoBehaviour
             int playerVisited = currentPlayer.GetVisitCount(roomID);
             string conditionKey = CheckCurrentCondition(playerVisited);
 
-            Debug.Log($"Room: {roomID}, Condition: {conditionKey}");
+            Debug.Log($"Room: {roomID}, playerCircuit:{Player.circuit}, Condition: {conditionKey}, visted Count: {playerVisited}");
 
             // 💡 수정 3: string 키를 전달하여 대사를 로드합니다.
             currentRoomLines = DialogueData.GetDialogueLines(roomID, conditionKey);
@@ -49,7 +50,7 @@ public class p53Log : MonoBehaviour
             chatLogLine = 0;
 
             if (currentRoomLines != null && currentRoomLines.Count > 0)
-            {
+            {//코루틴 끝나면 방문 횟수 증가 
                 dialogueCoroutine = StartCoroutine(Dialog());
             }
         }
@@ -78,17 +79,24 @@ public class p53Log : MonoBehaviour
     // 💡 상태 체크 함수
     string CheckCurrentCondition(int visited)
     {
-        if (roomID == "tut_01")
-        {
-            if (visited == 0)
-                if (linkedSpanwer != null && linkedSpanwer.SpawnerHasCircuit)
-                    return "Repaired";
-
+        if (roomID == "tut_00")
             if (Player.circuit)
-                return "HasCircuit";
+            {
+                linkedDoor.OpenTheDoor(true);
+                return "hasCircuit";
+            }
+        if (roomID == "tut_01")
+        {// 수리 완료는 연결된 스포너에 회로가 있을 때
+            if (linkedSpanwer != null && linkedSpanwer.SpawnerHasCircuit)
+                return "repaired";
+            //플레이어가 회로를 가지고 있을 때
+            if (Player.circuit && !linkedSpanwer.SpawnerHasCircuit)
+                return "hasCircuit";
         }
-
-        return "Default";
+        if (visited == 0)
+            return "startEvent";
+        //방문 횟수가 0이 아닐때
+        return "endEvent";
     }
 
 

@@ -10,10 +10,23 @@ public static class DialogueData
         {"tut_00", new Dictionary<string, List<string>>
             {
                 // 기본 상태 (아무 조건 없을 때)
-                {"Default", new List<string>
+                {"startEvent", new List<string>
                     {
                         "안녕하세요. 저는 p53입니다.",
                         "시설 수리를 위한 교육을 시작합니다.",
+                        "오른쪽에 보이는 것은 생물부화기입니다.",
+                        "회로를 수정함으로 조작함으로 여러 생물을 부화시킬 수 있습니다.",
+                        "생물 부화기를 조작하십시오."
+                    }
+                },
+                {"hasCircuit", new List<string>
+                {
+                    "다음 방으로 이동하십시오."
+                }
+            },
+                {"endEvent", new List<string>
+                    {
+
                     }
                 },
             }
@@ -25,7 +38,7 @@ public static class DialogueData
         {"tut_01", new Dictionary<string, List<string>>
             {
                 // 1. 처음 도착했을 때 (기본)
-                {"Default", new List<string>
+                {"startEvent", new List<string>
                     {
                         "이곳에 보이는 것은 생산 나무입니다.",
                         "생물들은 이 나무에서 자라는 정보를 먹고 활동합니다.",
@@ -33,15 +46,14 @@ public static class DialogueData
                     }
                 },
                 // 2. 플레이어가 회로를 가지고 있을 때
-                {"HasCircuit", new List<string>
+                {"hasCircuit", new List<string>
                     {
-                        "회로를 가지고 계시군요!",
-                        "그 회로를 생산기에 가까이 가져가 F키를 눌러 장착하십시오.",
-                        "생산기가 작동하면 생물이 태어날 것입니다."
+                        "이전 방에서 확득한 회로를 이쪽에 연결하십시오.",
+                        "생산 나무가 주변에 있으면, 생물은 반응하고, 행동합니다."
                     }
                 },
                 // 3. 이미 수리가 끝났을 때
-                {"Repaired", new List<string>
+                {"repaired", new List<string>
                     {
                         "생산기가 정상 작동 중입니다.",
                         "다음 구역으로 이동하십시오."

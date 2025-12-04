@@ -50,7 +50,6 @@ public class Spawner : MonoBehaviour, IInteractable
         if (currentRoom != null)
             currentRoom.RegisterSpawner(this);
     }
-
     public void AutoSpawn()
     {
         // 길이 0 이면 그냥 끝
@@ -86,11 +85,22 @@ public class Spawner : MonoBehaviour, IInteractable
         return transform.position + offset;
     }
     // 교체
+    IEnumerator ReplaceRoutine(int prefabIndex)
+    {
+        // 1. 기존 것들이 완전히 사라질 때까지 기다림
+        yield return StartCoroutine(DestroyAll());
+
+        // 2. 프리팹 인덱스 업데이트
+        spawnPrefabIndex = prefabIndex;
+
+        // 3. 스폰 시작 (DestroyAll이 끝난 후 List는 비어있음)
+        AutoSpawn();
+    }
+
     public void ReplaceAllWith(int prefabIndex)
     {
-        spawnPrefabIndex = prefabIndex;
-        StartCoroutine(DestroyAll());
-        AutoSpawn();
+        // 💡 수정: Coroutine을 호출하여 순서를 보장합니다.
+        StartCoroutine(ReplaceRoutine(prefabIndex));
     }
     //파괴
     private IEnumerator DestroyAll()
@@ -99,7 +109,7 @@ public class Spawner : MonoBehaviour, IInteractable
         {
             if (eater != null)
                 Destroy(eater);
-            yield return new WaitForSeconds(1f);
+            yield return new WaitForSeconds(0.1f);
         }
         spawnedEaters.Clear();
     }

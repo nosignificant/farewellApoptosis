@@ -21,6 +21,9 @@ public class Player : MonoBehaviour
     public string roomID;
     private Dictionary<string, int> roomMemories = new Dictionary<string, int>();
 
+    //player status
+    public string nowPlayerDoing = null;
+
     void Update()
     {
         PressE();
@@ -35,7 +38,6 @@ public class Player : MonoBehaviour
         if (other.CompareTag("Spawner"))
         {
             Spawner = other.GetComponent<Spawner>();
-
             PressEOnOff(true);
 
         }
@@ -66,11 +68,16 @@ public class Player : MonoBehaviour
             if (Spawner != null && Spawner.isPlayerIn)
             {
                 isEaterSelectOpen = true;
+                PlayerControl.setPlayerMove(false);
                 EaterSelectorUIOnOff(isEaterSelectOpen);
                 //eaterselector UI에 플레이어가 상호작용중인 스포너 설정
                 eaterSelector.SetSpawner(Spawner);
             }
         }
+        if (Spawner != null)
+            if (isEaterSelectOpen && !Spawner.SpawnerHasCircuit) PressEOnOff(false);
+            else PressEOnOff(true);
+
     }
 
     void PressF()
@@ -96,10 +103,11 @@ public class Player : MonoBehaviour
             if (isEaterSelectOpen)
             {
                 EaterSelectorUIOnOff(false);
+                PlayerControl.setPlayerMove(true);
+                PressEOnOff(true);
             }
-            // 여기에 나중에 esc 추가
-        }
 
+        }
     }
     void SyncUI()
     {// 플레이어가 반경을 나가면 e, enter, selector 다 꺼야하고 
@@ -128,7 +136,8 @@ public class Player : MonoBehaviour
 
     void PressEOnOff(bool onOff)
     {
-        Spawner.isPlayerIn = onOff;
+        if (Spawner)
+            Spawner.isPlayerIn = onOff;
         pressE.SetActive(onOff);
     }
 

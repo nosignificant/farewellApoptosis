@@ -18,7 +18,7 @@ public class EaterSelectorUI : MonoBehaviour
     void Update()
     {
         UpdatePrefabNum();
-        ConfirmWithEnter();
+        ConfirmWithE();
         if (Input.GetKeyDown(KeyCode.A)) Debug.Log("keydown A from eaterSelector");
         else if (Input.GetKeyDown(KeyCode.D)) Debug.Log("keydown D from eaterSelector");
     }
@@ -58,8 +58,7 @@ public class EaterSelectorUI : MonoBehaviour
 
         // 3. 텍스트도 업데이트합니다.
         int humanIndex = selectedIndex + 1;
-        if (nowPrefabText != null)
-            nowPrefabText.text = $"now producing: {humanIndex}";
+
     }
 
     void SetCursor(int index)
@@ -70,7 +69,7 @@ public class EaterSelectorUI : MonoBehaviour
                 cursors[i].SetActive(i == index);
         }
     }
-    void ConfirmWithEnter()
+    void ConfirmWithE()
     {
         if (!spawner.isPlayerIn) return;
         if (spawner == null) return;
@@ -79,6 +78,8 @@ public class EaterSelectorUI : MonoBehaviour
         {
             spawner.ReplaceAllWith(selectedIndex);
         }
+        if (nowPrefabText != null)
+            nowPrefabText.text = $"now producing: {selectedIndex}";
     }
 
     public void SetSpawner(Spawner spawnerObject)

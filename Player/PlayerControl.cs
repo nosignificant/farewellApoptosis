@@ -15,7 +15,7 @@ public class PlayerControl : MonoBehaviour
     CharacterController characterController;
     Vector3 moveDirection = Vector3.zero;
     Vector2 rotation = Vector2.zero;
-    public static bool canMove = true;
+    private static bool canMove = true;
 
     void Start()
     {
@@ -69,4 +69,8 @@ public class PlayerControl : MonoBehaviour
         }
     }
 
+    public static void setPlayerMove(bool onOff)
+    {
+        canMove = onOff;
+    }
 }
