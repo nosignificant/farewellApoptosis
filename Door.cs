@@ -4,7 +4,7 @@ using System.Collections; // 코루틴 사용을 위해 필요
 public class Door : MonoBehaviour
 {
     [Header("Door Settings")]
-    public float openHeight = 3.0f;     // 문이 위로 열리는 거리
+    public float openHeight = 3f;     // 문이 위로 열리는 거리
     public float moveDuration = 1.0f;   // 문이 열리거나 닫히는 데 걸리는 시간 (초)
 
     [Header("Current State")]
@@ -20,7 +20,13 @@ public class Door : MonoBehaviour
         closedPosition = transform.position;
 
         // 2. 문이 완전히 열리는 목표 위치 계산 (현재 위치에서 Y축으로만 올림)
-        openPosition = closedPosition + new Vector3(0, openHeight, 0);
+        openPosition = closedPosition + new Vector3(0, openHeight * 10, 0);
+    }
+
+    void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.O)) OpenTheDoor(true);
+        if (Input.GetKeyDown(KeyCode.C)) OpenTheDoor(false);
     }
 
     // 외부에서 문 열림/닫힘을 요청할 때 사용하는 공용 함수

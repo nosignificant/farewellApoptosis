@@ -11,22 +11,49 @@ public class p53Log : MonoBehaviour
     [SerializeField] private float delay = 2f;
 
     [Header("Room Settings")]
-
     public string roomID;
-    public Spawner linkedSpanwer;
+    public Spawner linkedSpawner;
     public Door linkedDoor;
+
+    [Header("Dialogue State")]
     public int chatLogLine = 0;
     public bool isDialogueFinished = false;
+
     private List<string> currentRoomLines;
     private Coroutine dialogueCoroutine;
     private Player currentPlayer;
 
+    // 💡 방금 재생한 상태를 기억하는 변수 (중복 실행 방지용)
+    private string lastConditionKey = "";
+
     void Start()
     {
-        //p53 대사 위치는 바뀌지 않음, 플레이어 스탯 가져와서 플레이어 스탯에 따라 다른 대사를 하게끔 함 
-        roomID = Util.FindCurrentRoom(this.transform.position).roomID;
+        var currentRoom = Util.FindCurrentRoom(this.transform.position);
+        if (currentRoom != null) roomID = currentRoom.roomID;
     }
 
+    // 💡 1. 실시간 상태 감지 (Update)
+    void Update()
+    {
+        // 플레이어가 안에 있고, 플레이어 정보가 있을 때만 실행
+        if (isPlayerIn && currentPlayer != null)
+        {
+            // (1) 현재 상황 파악 (방문 횟수, 회로 소지 여부 등)
+            int visitCount = currentPlayer.GetVisitCount(roomID);
+            string newConditionKey = CheckCurrentCondition(visitCount);
+
+            // (2) 상황이 바뀌었는지 체크! (입장 직후 or 회로 획득 시)
+            if (newConditionKey != lastConditionKey)
+            {
+                Debug.Log($"상태 변경 감지: {lastConditionKey} -> {newConditionKey}");
+
+                // (3) 변경된 상황 처리 (대사 재생 + 문 열기 등)
+                ProcessCondition(newConditionKey);
+            }
+        }
+    }
+
+    // 💡 2. 입장 처리 (OnTriggerEnter)
     private void OnTriggerEnter(Collider other)
     {
         if (!other.CompareTag("Player")) return;
@@ -34,38 +61,28 @@ public class p53Log : MonoBehaviour
 
         isPlayerIn = true;
         isDialogueFinished = false;
-
         currentPlayer = other.GetComponent<Player>();
 
         if (currentPlayer != null)
         {
-            int playerVisited = currentPlayer.GetVisitCount(roomID);
-            string conditionKey = CheckCurrentCondition(playerVisited);
-
-            Debug.Log($"Room: {roomID}, playerCircuit:{Player.circuit}, Condition: {conditionKey}, visted Count: {playerVisited}");
-
-            // 💡 수정 3: string 키를 전달하여 대사를 로드합니다.
-            currentRoomLines = DialogueData.GetDialogueLines(roomID, conditionKey);
-
-            chatLogLine = 0;
-
-            if (currentRoomLines != null && currentRoomLines.Count > 0)
-            {//코루틴 끝나면 방문 횟수 증가 
-                dialogueCoroutine = StartCoroutine(Dialog());
-            }
+            // 💡 핵심: 들어오자마자 Update가 "어? 상태가 비어있네? 처리해야지!" 라고 인식하게 만듦
+            lastConditionKey = "";
         }
     }
 
+    // 💡 3. 퇴장 처리 (OnTriggerExit)
     private void OnTriggerExit(Collider other)
     {
         if (!other.CompareTag("Player")) return;
 
+        // 대사 중단 안내
         if (!isDialogueFinished && currentRoomLines != null && currentRoomLines.Count > 0)
         {
             chatLog.Post("안내를 끝까지 듣고 이동하시길 바랍니다.");
-            Debug.Log("대사 중단됨. 방문 횟수 증가 안 함.");
+            Debug.Log("대사 중단됨.");
         }
 
+        // 코루틴 정리
         if (dialogueCoroutine != null)
         {
             StopCoroutine(dialogueCoroutine);
@@ -74,31 +91,60 @@ public class p53Log : MonoBehaviour
 
         isPlayerIn = false;
         currentPlayer = null;
+        lastConditionKey = ""; // 나갈 때 상태 초기화
     }
 
-    // 💡 상태 체크 함수
+    // 💡 4. 액션 및 대사 실행 통합 함수
+    void ProcessCondition(string conditionKey)
+    {
+        // (1) 상태 업데이트 (중복 방지)
+        lastConditionKey = conditionKey;
+
+        // (2) 액션 실행: 문 열기 등 물리적 변화
+        if (roomID == "tut_00" && conditionKey == "hasCircuit")
+        {
+            if (linkedDoor != null) linkedDoor.OpenTheDoor(true);
+        }
+        if (roomID == "tut_01" && conditionKey == "repaired")
+        {
+            if (linkedDoor != null) linkedDoor.OpenTheDoor(true);
+        }
+
+
+        // (3) 대사 실행 로직
+        if (dialogueCoroutine != null) StopCoroutine(dialogueCoroutine); // 기존 대사 끊기
+
+        currentRoomLines = DialogueData.GetDialogueLines(roomID, conditionKey);
+        chatLogLine = 0;
+
+        if (currentRoomLines != null && currentRoomLines.Count > 0)
+        {
+            isDialogueFinished = false;
+            dialogueCoroutine = StartCoroutine(Dialog());
+        }
+    }
+
+    // 💡 5. 조건 체크 로직 (순수하게 키값만 반환)
     string CheckCurrentCondition(int visited)
     {
+        // [우선순위 1] 특수 조건 (회로 획득, 수리 완료 등)
         if (roomID == "tut_00")
-            if (Player.circuit)
-            {
-                linkedDoor.OpenTheDoor(true);
-                return "hasCircuit";
-            }
-        if (roomID == "tut_01")
-        {// 수리 완료는 연결된 스포너에 회로가 있을 때
-            if (linkedSpanwer != null && linkedSpanwer.SpawnerHasCircuit)
-                return "repaired";
-            //플레이어가 회로를 가지고 있을 때
-            if (Player.circuit && !linkedSpanwer.SpawnerHasCircuit)
-                return "hasCircuit";
+        {
+            if (Player.circuit) return "hasCircuit";
         }
-        if (visited == 0)
-            return "startEvent";
-        //방문 횟수가 0이 아닐때
+
+        if (roomID == "tut_01")
+        {
+            if (linkedSpawner != null && linkedSpawner.SpawnerHasCircuit) return "repaired";
+            if (Player.circuit) return "hasCircuit";
+        }
+
+        // [우선순위 2] 첫 방문
+        if (visited == 0) return "startEvent";
+
+        // [우선순위 3] 일반 재방문
         return "endEvent";
     }
-
 
     IEnumerator Dialog()
     {
@@ -119,7 +165,6 @@ public class p53Log : MonoBehaviour
         if (currentRoomLines.Count == chatLogLine)
         {
             isDialogueFinished = true;
-
             if (currentPlayer != null)
             {
                 currentPlayer.AddVisitRecord(roomID);

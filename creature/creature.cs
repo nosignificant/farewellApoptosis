@@ -4,6 +4,10 @@ using UnityEngine;
 
 public class Creature : MonoBehaviour
 {
+    [Header("CREATURE ID")]
+    public int CREATURE_ID;
+
+
     [Header("Base Settings")]
     public float speed = 3f;
     public float foodSpeed = 2f;
@@ -12,13 +16,12 @@ public class Creature : MonoBehaviour
     public float radius = 10f;
     public int runAway = 2;
 
-    //인스펙터 창에서 각각의 생물 아이디 등록 
-    public int CREATURE_ID;
+    protected Rigidbody rb;
 
     [Header("Food")]
-    float nearestFoodDist;
-    Food nearestFood;
-    bool isEating = false;
+    protected float nearestFoodDist;
+    protected Food nearestFood;
+    protected bool isEating = false;
     public float eatingDuration = 1.0f;
     //1초에 한입씩 먹음 
     public float damagePerSecond = 1f;
@@ -34,13 +37,15 @@ public class Creature : MonoBehaviour
 
     [Header("Enemy - friend")]
 
-    public List<int> enemyCreatureIDs = new List<int>();
-    public List<int> friendCreatureIDs = new List<int>();
+    protected List<int> enemyCreatureIDs = new List<int>();
+    protected List<int> friendCreatureIDs = new List<int>();
+    protected List<Creature> interested = new List<Creature>();
+
     public List<Creature> friends = new List<Creature>();
 
-    GameObject nearestEnemy;
-    float nearestEnemyDist;
-    bool isAttacking = false;
+    protected GameObject nearestEnemy;
+    protected float nearestEnemyDist;
+    protected bool isAttacking = false;
 
     [Header("Room")]
 
@@ -51,22 +56,13 @@ public class Creature : MonoBehaviour
         PickWanderTarget();
     }
 
+    protected virtual void Awake()
+    {
+        rb = GetComponent<Rigidbody>();
+    }
     protected virtual void Update()
     {
         CheckNearby();
-
-        if (nearestEnemy != null)
-        {
-            EnemyAction();
-        }
-        else if (nearestFood != null)
-        {
-            foodAction();
-        }
-        else
-        {
-            Wander();
-        }
     }
 
 
@@ -86,7 +82,7 @@ public class Creature : MonoBehaviour
         }
         else
         {
-            //콜라이더 반경 계산
+            //방 안에 있는 모든 생물 대상으로 함
             Vector3 center = currentRoom.roomCollider.bounds.center;
             Vector3 halfExtents = currentRoom.roomCollider.bounds.extents;
             hits = Physics.OverlapBox(center, halfExtents, Quaternion.identity);
@@ -108,6 +104,7 @@ public class Creature : MonoBehaviour
             }
         }
     }
+    //제일 가까이 있는 음식 확인
     void UpdateNearestFood(Collider hit)
     {
         float dist = Vector3.Distance(transform.position, hit.transform.position);
@@ -131,11 +128,12 @@ public class Creature : MonoBehaviour
             if (dist < nearestEnemyDist)
             {
                 nearestEnemyDist = dist;
-                nearestEnemy = hit.gameObject; // 💡 GameObject 저장
+                nearestEnemy = hit.gameObject;
             }
         }
-        if (friendCreatureIDs.Contains(other.CREATURE_ID))
+        else if (friendCreatureIDs.Contains(other.CREATURE_ID))
             if (!friends.Contains(other)) friends.Add(other);
+            else interested.Add(other);
     }
 
     // ---------------------- FOOD ACTION ------------------------
@@ -144,13 +142,14 @@ public class Creature : MonoBehaviour
     {
         if (nearestFood == null) return;
         if (isEating) return;
-
+        //여기부터 가까이 있는 음식까지의 거리 
         float distance = Vector3.Distance(this.transform.position, nearestFood.transform.position);
 
         if (distance > 2.0f)
         {
             Vector3 dir = Util.GetDirectionTo(this.transform, nearestFood.transform);
-            Util.towards(this.transform, speed, dir, foodSpeed);
+            if (rb != null)
+                Util.towards(rb, speed, dir);
         }
         else
         {
@@ -169,19 +168,16 @@ public class Creature : MonoBehaviour
 
         while (foodToEat != null && foodToEat.foodHealth > 0)
         {
-            //먹을 거 없으면 중단 
             if (foodToEat == null || !foodToEat.gameObject.activeInHierarchy) break;
+            distance = Vector3.Distance(this.transform.position, foodToEat.transform.position);
 
-
-
-            // 1. 이동/정지 로직
+            // 너무 멀면 일단 가까이감
             if (distance > STOP_DISTANCE)
             {
-                distance = Vector3.Distance(this.transform.position, foodToEat.transform.position);
                 Vector3 dir = Util.GetDirectionTo(this.transform, foodToEat.transform);
-                Util.towards(this.transform, speed, dir, foodSpeed);
-                yield return null; // 1프레임 대기 후
-                continue; // 루프 처음으로 돌아감, 밑의 함수 실행 안함 
+                Util.towards(rb, speed, dir);
+                yield return null;
+                continue; // 너무 멀리 있을 때 음식 먹는 행동은 아직 안함
             }
 
             yield return StartCoroutine(OrbitAroundCenter(foodToEat.transform.position, 1.0f, 1.0f));
@@ -189,20 +185,19 @@ public class Creature : MonoBehaviour
             // 거기까지 갔는데 없을 수도 있으니 또 확인
             if (foodToEat == null) break;
 
-            // 3. 헬스 감소 및 뜸 들이기
             foodToEat.TakeBite(1);
             yield return new WaitForSeconds(damagePerSecond);
         }
 
 
         nearestFood = null;
-        isEating = false; // 다시 추격 상태로 돌아갈 수 있게 상태 해제
+        isEating = false;
         PickWanderTarget();
     }
 
 
     // ---------------------- ENEMY ACTION ------------------------
-    public void EnemyAction()
+    public void EnemyAction1()
     {
         if (nearestEnemy == null) return;
 
@@ -219,6 +214,15 @@ public class Creature : MonoBehaviour
         }
     }
 
+    public void EnemyAction2()
+    {
+        if (nearestEnemy == null) return;
+
+        Vector3 dirToEnemy = Util.GetDirectionTo(this.transform, nearestEnemy.transform);
+
+        if (!isAttacking)
+            StartCoroutine(AttackEnemy());
+    }
 
     IEnumerator AttackEnemy()
     {
@@ -228,7 +232,7 @@ public class Creature : MonoBehaviour
                Vector3.Distance(transform.position, nearestEnemy.transform.position) > 3f)
         {
             Vector3 dir = Util.GetDirectionTo(this.transform, nearestEnemy.transform);
-            Util.towards(this.transform, speed, dir, attackSpeed);
+            Util.towards(rb, attackSpeed, dir);
             yield return null;
         }
 
@@ -237,7 +241,7 @@ public class Creature : MonoBehaviour
         if (nearestEnemy != null)
         {
             Vector3 dir = Util.GetDirectionTo(this.transform, nearestEnemy.transform);
-            Util.moveBack(this.transform, speed, dir, 2f);
+            Util.moveBack(rb, speed, dir);
         }
 
         isAttacking = false;
@@ -308,11 +312,16 @@ public class Creature : MonoBehaviour
         }
 
         Vector3 dir = Util.GetDirectionTo(this.transform, wanderTarget);
-        Util.towards(this.transform, speed, dir, 0.5f);
 
-        if (Vector3.Distance(transform.position, wanderTarget.position) < 1f) // 💡 .position 접근
+        // 💡 수정 1: transform 대신 rb를 전달하여 물리 이동 사용 (벽 뚫기 방지)
+        if (rb != null)
+            Util.towards(this.rb, speed * 0.5f, dir);
+        else
+            Util.towards(this.transform, speed, dir, 0.5f);
+
+
+        if (Vector3.Distance(transform.position, wanderTarget.position) < 1f)
         {
-            // 💡 Orbit 시작 (Vector3를 받도록 오버로드된 OrbitAroundCenter를 호출하는 래퍼 사용)
             isOrbitingWander = true;
             wanderOrbitCoroutine = StartCoroutine(WanderOrbitRoutine(wanderTarget.position, 1f, 1f));
         }
@@ -330,7 +339,7 @@ public class Creature : MonoBehaviour
 
         while (timer < duration)
         {
-            float angle = rotationSpeed * timer;
+            float angle = rotationSpeed * timer; // (Time.deltaTime 곱하지 않음: 시간 경과에 따른 누적 각도)
 
             // 회전 벡터 계산
             Quaternion rotation = Quaternion.Euler(0, angle, 0);
@@ -339,13 +348,24 @@ public class Creature : MonoBehaviour
             // 새로운 목표 위치 계산
             Vector3 targetPosition = centerPosition + rotatedDirection * orbitRadius;
 
-            // 오브젝트를 새로운 목표 위치로 이동 (Util 함수를 사용할 경우)
-            transform.position = Vector3.Lerp(transform.position, targetPosition, Time.deltaTime * speed);
+            // 💡 수정 2: transform.position 대입 대신 Rigidbody.MovePosition 사용
+            if (rb != null)
+            {
+                // 부드럽게 이동하기 위해 Lerp로 다음 위치 계산 후 물리 이동
+                Vector3 nextPos = Vector3.Lerp(rb.position, targetPosition, Time.deltaTime * speed);
+                rb.MovePosition(nextPos);
+            }
+            else
+            {
+                // 리지드바디 없을 때 (기존 방식)
+                transform.position = Vector3.Lerp(transform.position, targetPosition, Time.deltaTime * speed);
+            }
 
             timer += Time.deltaTime;
             yield return null;
         }
 
+        // Orbit 종료 후에는 자연스러운 연결을 위해 yield break
         yield break;
     }
 

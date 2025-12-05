@@ -6,6 +6,22 @@ using UnityEngine.UI; // UnityEngine.UI는 여기서 필요 없지만, 이전 �
 
 public class Eater : Creature
 {
+    protected override void Update()
+    {
+        base.CheckNearby();
 
+        if (nearestEnemy != null)
+        {
+            base.EnemyAction();
+        }
+        else if (nearestFood != null)
+        {
+            base.foodAction1();
+        }
+        else
+        {
+            base.Wander();
+        }
+    }
 }
 

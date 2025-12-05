@@ -10,6 +10,24 @@ public class Convey : Eater
         base.Start();
         if (currentRoom != null) currentRoom.OnCreatureEnter(this);
     }
+
+    protected override void Update()
+    {
+        base.CheckNearby();
+
+        if (nearestEnemy != null)
+        {
+            base.EnemyAction();
+        }
+        else if (nearestFood != null)
+        {
+            base.foodAction2();
+        }
+        else
+        {
+            base.Wander();
+        }
+    }
     protected override void PickWanderTarget()
     {
         if (currentRoom == null) return;
