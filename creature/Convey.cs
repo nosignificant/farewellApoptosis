@@ -17,11 +17,11 @@ public class Convey : Eater
 
         if (nearestEnemy != null)
         {
-            base.EnemyAction();
+            base.EnemyAction2();
         }
         else if (nearestFood != null)
         {
-            base.foodAction2();
+            base.foodAction();
         }
         else
         {

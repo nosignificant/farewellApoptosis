@@ -12,11 +12,11 @@ public class Eater : Creature
 
         if (nearestEnemy != null)
         {
-            base.EnemyAction();
+            base.EnemyAction2();
         }
         else if (nearestFood != null)
         {
-            base.foodAction1();
+            base.foodAction();
         }
         else
         {

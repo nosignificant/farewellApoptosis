@@ -9,10 +9,10 @@ public class Creature : MonoBehaviour
 
 
     [Header("Base Settings")]
-    public float speed = 3f;
-    public float foodSpeed = 2f;
-    public float fleeSpeed = 3f;
-    public float attackSpeed = 4f;
+    public float speed = 10f;
+    public float foodSpeed = 10f;
+    public float fleeSpeed = 10f;
+    public float attackSpeed = 10f;
     public float radius = 10f;
     public int runAway = 2;
 
@@ -32,14 +32,12 @@ public class Creature : MonoBehaviour
     float wanderTimer = 0f;
     public float wanderInterval = 2f;
     public float wanderDistance = 5f;
-    private bool isOrbitingWander = false;
-    private Coroutine wanderOrbitCoroutine = null;
 
     [Header("Enemy - friend")]
 
-    protected List<int> enemyCreatureIDs = new List<int>();
-    protected List<int> friendCreatureIDs = new List<int>();
-    protected List<Creature> interested = new List<Creature>();
+    public List<int> enemyCreatureIDs = new List<int>();
+    public List<int> friendCreatureIDs = new List<int>();
+    public List<Creature> interested = new List<Creature>();
 
     public List<Creature> friends = new List<Creature>();
 
@@ -51,6 +49,8 @@ public class Creature : MonoBehaviour
 
     public Room currentRoom;
 
+    public string creature_statues = null;
+
     protected virtual void Start()
     {
         PickWanderTarget();
@@ -60,10 +60,8 @@ public class Creature : MonoBehaviour
     {
         rb = GetComponent<Rigidbody>();
     }
-    protected virtual void Update()
-    {
-        CheckNearby();
-    }
+
+    protected virtual void Update() { }
 
 
     // ---------------------- CHECK ------------------------
@@ -71,6 +69,7 @@ public class Creature : MonoBehaviour
     {
         nearestEnemy = null;
         friends.Clear();
+        interested.Clear();
 
         nearestFoodDist = Mathf.Infinity;
         nearestEnemyDist = Mathf.Infinity;
@@ -133,7 +132,7 @@ public class Creature : MonoBehaviour
         }
         else if (friendCreatureIDs.Contains(other.CREATURE_ID))
             if (!friends.Contains(other)) friends.Add(other);
-            else interested.Add(other);
+            else { if (!interested.Contains(other)) interested.Add(other); }
     }
 
     // ---------------------- FOOD ACTION ------------------------
@@ -145,7 +144,7 @@ public class Creature : MonoBehaviour
         //여기부터 가까이 있는 음식까지의 거리 
         float distance = Vector3.Distance(this.transform.position, nearestFood.transform.position);
 
-        if (distance > 2.0f)
+        if (distance > 9)
         {
             Vector3 dir = Util.GetDirectionTo(this.transform, nearestFood.transform);
             if (rb != null)
@@ -154,6 +153,7 @@ public class Creature : MonoBehaviour
         else
         {
             isEating = true;
+            creature_statues = "eating";
             StartCoroutine(EatFoodRoutine(nearestFood));
         }
     }
@@ -163,7 +163,7 @@ public class Creature : MonoBehaviour
     IEnumerator EatFoodRoutine(Food foodToEat)
     {
         // 💡 목표 거리 설정
-        const float STOP_DISTANCE = 1.5f;
+        const float STOP_DISTANCE = 9f;
         float distance = 0f;
 
         while (foodToEat != null && foodToEat.foodHealth > 0)
@@ -179,8 +179,6 @@ public class Creature : MonoBehaviour
                 yield return null;
                 continue; // 너무 멀리 있을 때 음식 먹는 행동은 아직 안함
             }
-
-            yield return StartCoroutine(OrbitAroundCenter(foodToEat.transform.position, 1.0f, 1.0f));
 
             // 거기까지 갔는데 없을 수도 있으니 또 확인
             if (foodToEat == null) break;
@@ -206,10 +204,15 @@ public class Creature : MonoBehaviour
         if (friends.Count >= runAway)
         {
             if (!isAttacking)
+            {
+                creature_statues = "attacking";
                 StartCoroutine(AttackEnemy());
+            }
+
         }
         else
         {
+            creature_statues = "flee";
             Util.moveBack(this.transform, speed, dirToEnemy, fleeSpeed);
         }
     }
@@ -221,7 +224,10 @@ public class Creature : MonoBehaviour
         Vector3 dirToEnemy = Util.GetDirectionTo(this.transform, nearestEnemy.transform);
 
         if (!isAttacking)
+        {
+            creature_statues = "attacking";
             StartCoroutine(AttackEnemy());
+        }
     }
 
     IEnumerator AttackEnemy()
@@ -249,60 +255,13 @@ public class Creature : MonoBehaviour
 
 
 
-    // ---------------------- WANDER ACTION ------------------------
 
-    protected virtual void PickWanderTarget()
-    {
-        if (wanderTarget != null) Destroy(wanderTarget.gameObject);
-
-        if (currentRoom == null || currentRoom.roomCollider == null) return;
-
-        // 💡 수정: currentRoom.roomCollider 사용
-        Vector3 center = currentRoom.roomCollider.bounds.center;
-        Vector3 extents = currentRoom.roomCollider.bounds.extents;
-        int attempts = 0;
-        const int maxAttempts = 10;
-
-        do
-        {
-            // ... (potentialTarget 계산 로직은 동일) ...
-            Vector3 randDir = Random.insideUnitSphere.normalized;
-            Vector3 potentialTarget = transform.position + randDir * wanderDistance;
-
-            // ... (경계 검사 로직은 동일) ...
-            Vector3 minBounds = center - extents;
-            Vector3 maxBounds = center + extents;
-
-            bool isInsideBounds =
-                potentialTarget.x >= minBounds.x && potentialTarget.x <= maxBounds.x &&
-                potentialTarget.y >= minBounds.y && potentialTarget.y <= maxBounds.y &&
-                potentialTarget.z >= minBounds.z && potentialTarget.z <= maxBounds.z;
-
-            if (isInsideBounds)
-            {
-                // 💡 핵심 수정: 임시 GameObject를 생성하고 Transform을 할당합니다.
-                GameObject targetObject = new GameObject("WanderTarget_" + currentRoom.roomID);
-                targetObject.transform.position = potentialTarget;
-                wanderTarget = targetObject.transform;
-                return; // 유효한 목표 발견, 종료
-            }
-
-            attempts++;
-        } while (attempts < maxAttempts);
-
-        // 10회 시도 후에도 실패하면, 경계 중심으로 목표 설정
-        GameObject fallbackObject = new GameObject("WanderTarget_Fallback_" + currentRoom.roomID);
-        fallbackObject.transform.position = center;
-        wanderTarget = fallbackObject.transform;
-    }
 
     // ---------------------- WANDER ACTION ------------------------
 
-    // Eater.cs Wander() 함수 수정
 
-    void Wander()
+    protected void Wander()
     {
-        if (isOrbitingWander) return;
 
         wanderTimer += Time.deltaTime;
         if (wanderTimer >= wanderInterval)
@@ -316,68 +275,71 @@ public class Creature : MonoBehaviour
         // 💡 수정 1: transform 대신 rb를 전달하여 물리 이동 사용 (벽 뚫기 방지)
         if (rb != null)
             Util.towards(this.rb, speed * 0.5f, dir);
-        else
-            Util.towards(this.transform, speed, dir, 0.5f);
-
-
-        if (Vector3.Distance(transform.position, wanderTarget.position) < 1f)
-        {
-            isOrbitingWander = true;
-            wanderOrbitCoroutine = StartCoroutine(WanderOrbitRoutine(wanderTarget.position, 1f, 1f));
-        }
     }
-    // ---------------------- ORBIT ACTION ------------------------
 
-    public IEnumerator OrbitAroundCenter(Vector3 centerPosition, float duration, float orbitRadius = 2f)
+
+    // ---------------------- PickWanderTarget ------------------------
+
+    protected virtual void PickWanderTarget()
     {
-        float timer = 0f;
+        if (wanderTarget != null) Destroy(wanderTarget.gameObject);
 
-        // 현재 위치에서 중심 위치까지의 방향 벡터
-        Vector3 initialDirection = (transform.position - centerPosition).normalized;
+        if (currentRoom == null || currentRoom.roomCollider == null) return;
 
-        float rotationSpeed = 360f / duration;
+        Vector3 center = currentRoom.roomCollider.bounds.center;
+        Vector3 extents = currentRoom.roomCollider.bounds.extents;
 
-        while (timer < duration)
+        int attempts = 0;
+        const int maxAttempts = 10;
+
+        // 💡 1. 탐색의 기준점(Pivot) 정하기
+        Vector3 searchPivot = transform.position; // 기본값: 내 주변 배회
+
+        // 관심 대상이 있고, 60% 확률에 당첨되면 기준점을 바꿈
+        if (interested.Count > 0 && Random.value < 0.6f)
         {
-            float angle = rotationSpeed * timer; // (Time.deltaTime 곱하지 않음: 시간 경과에 따른 누적 각도)
+            Creature targetCreature = interested[Random.Range(0, interested.Count)];
 
-            // 회전 벡터 계산
-            Quaternion rotation = Quaternion.Euler(0, angle, 0);
-            Vector3 rotatedDirection = rotation * initialDirection;
-
-            // 새로운 목표 위치 계산
-            Vector3 targetPosition = centerPosition + rotatedDirection * orbitRadius;
-
-            // 💡 수정 2: transform.position 대입 대신 Rigidbody.MovePosition 사용
-            if (rb != null)
+            if (targetCreature != null)
             {
-                // 부드럽게 이동하기 위해 Lerp로 다음 위치 계산 후 물리 이동
-                Vector3 nextPos = Vector3.Lerp(rb.position, targetPosition, Time.deltaTime * speed);
-                rb.MovePosition(nextPos);
+                searchPivot = targetCreature.transform.position;
             }
-            else
-            {
-                // 리지드바디 없을 때 (기존 방식)
-                transform.position = Vector3.Lerp(transform.position, targetPosition, Time.deltaTime * speed);
-            }
-
-            timer += Time.deltaTime;
-            yield return null;
         }
 
-        // Orbit 종료 후에는 자연스러운 연결을 위해 yield break
-        yield break;
+        do
+        {
+            // 💡 2. 기준점(searchPivot) 주변에서 랜덤 위치 생성
+            Vector3 randDir = Random.insideUnitSphere.normalized;
+            Vector3 potentialTarget = searchPivot + randDir * wanderDistance;
+
+            // 3. 경계 검사 (로직 동일)
+            Vector3 minBounds = center - extents;
+            Vector3 maxBounds = center + extents;
+
+            bool isInsideBounds =
+                potentialTarget.x >= minBounds.x && potentialTarget.x <= maxBounds.x &&
+                potentialTarget.y >= minBounds.y && potentialTarget.y <= maxBounds.y &&
+                potentialTarget.z >= minBounds.z && potentialTarget.z <= maxBounds.z;
+
+            // 4. (추가) 만약 관심 대상을 보러 가는데, 그 위치가 방 밖이라면?
+            // -> 다시 내 주변을 찾도록 searchPivot을 초기화하고 재시도하게 할 수도 있음 (선택 사항)
+
+            if (isInsideBounds)
+            {
+                GameObject targetObject = new GameObject("WanderTarget_" + currentRoom.roomID);
+                targetObject.transform.position = potentialTarget;
+                wanderTarget = targetObject.transform;
+                return;
+            }
+
+            attempts++;
+        } while (attempts < maxAttempts);
+
+        // 실패 시 (Fallback)
+        GameObject fallbackObject = new GameObject("WanderTarget_Fallback_" + currentRoom.roomID);
+        fallbackObject.transform.position = center;
+        wanderTarget = fallbackObject.transform;
     }
-
-    IEnumerator WanderOrbitRoutine(Vector3 center, float duration, float radius)
-    {
-        yield return StartCoroutine(OrbitAroundCenter(center, duration, radius));
-        isOrbitingWander = false;
-        wanderOrbitCoroutine = null;
-        PickWanderTarget(); // 새로운 Wander 목표 설정
-    }
-
-
 
 }
 

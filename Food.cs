@@ -19,6 +19,7 @@ public class Food : MonoBehaviour
 
     public void TakeBite(int damage)
     {
+        Debug.Log("food health decreased");
         foodHealth -= damage;
 
         if (foodHealth <= 0)
