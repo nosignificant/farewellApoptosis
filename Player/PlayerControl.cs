@@ -6,6 +6,7 @@ public class PlayerControl : MonoBehaviour
 {
     public float speed = 7.5f;
     public float jumpSpeed = 8.0f;
+    public float runSpeed = 15.0f;
     public float gravity = 20.0f;
     public float lookSpeed = 2.0f;
     public float lookXLimit = 60.0f;
@@ -36,8 +37,13 @@ public class PlayerControl : MonoBehaviour
             Vector3 forward = transform.TransformDirection(Vector3.forward);
             Vector3 right = transform.TransformDirection(Vector3.right);
 
-            float curSpeedX = canMove ? speed * Input.GetAxis("Vertical") : 0;
-            float curSpeedY = canMove ? speed * Input.GetAxis("Horizontal") : 0;
+            bool isRunning = Input.GetKey(KeyCode.LeftShift);
+
+            // 💡 수정: 달리는 중이면 runSpeed, 아니면 기본 speed 사용
+            float curSpeed = isRunning ? runSpeed : speed;
+
+            float curSpeedX = canMove ? curSpeed * Input.GetAxis("Vertical") : 0;
+            float curSpeedY = canMove ? curSpeed * Input.GetAxis("Horizontal") : 0;
 
             moveDirection = (forward * curSpeedX) + (right * curSpeedY);
 

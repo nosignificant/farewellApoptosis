@@ -144,7 +144,7 @@ public class Creature : MonoBehaviour
         //여기부터 가까이 있는 음식까지의 거리 
         float distance = Vector3.Distance(this.transform.position, nearestFood.transform.position);
 
-        if (distance > 9)
+        if (distance > 8)
         {
             Vector3 dir = Util.GetDirectionTo(this.transform, nearestFood.transform);
             if (rb != null)
@@ -163,7 +163,7 @@ public class Creature : MonoBehaviour
     IEnumerator EatFoodRoutine(Food foodToEat)
     {
         // 💡 목표 거리 설정
-        const float STOP_DISTANCE = 9f;
+        const float STOP_DISTANCE = 8f;
         float distance = 0f;
 
         while (foodToEat != null && foodToEat.foodHealth > 0)
