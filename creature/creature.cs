@@ -9,10 +9,10 @@ public class Creature : MonoBehaviour
 
 
     [Header("Base Settings")]
-    public float speed = 10f;
-    public float foodSpeed = 10f;
-    public float fleeSpeed = 10f;
-    public float attackSpeed = 10f;
+    public float speed;
+    public float foodSpeed;
+    public float fleeSpeed;
+    public float attackSpeed;
     public float radius = 10f;
     public int runAway = 2;
     public int MAX_HP;
@@ -22,7 +22,7 @@ public class Creature : MonoBehaviour
 
     [Header("Food")]
     protected float nearestFoodDist;
-    protected Food nearestFood;
+    protected Creature nearestFood;
     protected bool isEating = false;
     public float eatingDuration = 1.0f;
     //1초에 한입씩 먹음 
@@ -30,7 +30,7 @@ public class Creature : MonoBehaviour
     private Coroutine eatingCoroutine = null;
 
     [Header("Wander")]
-    Transform wanderTarget;
+    GameObject wanderTarget;
     float wanderTimer = 0f;
     public float wanderInterval = 2f;
     public float wanderDistance = 5f;
@@ -133,14 +133,14 @@ public class Creature : MonoBehaviour
             if (dist < nearestEnemyDist)
             {
                 nearestEnemyDist = dist;
-                nearestEnemy = other;
+                nearestFood = other;
             }
         }
     }
 
     // ---------------------- FOOD ACTION ------------------------
 
-    public void foodAction()
+    protected virtual void foodAction()
     {
         if (nearestFood == null || isEating) return;
 
@@ -234,8 +234,6 @@ public class Creature : MonoBehaviour
     }
 
     // ---------------------- WANDER ACTION ------------------------
-
-
     protected void Wander()
     {
 
@@ -246,17 +244,26 @@ public class Creature : MonoBehaviour
             PickWanderTarget();
         }
 
-        Vector3 dir = Util.GetDirectionTo(this.transform, wanderTarget);
+        if (wanderTarget == null) return;
+
+        Vector3 dir = Util.GetDirectionTo(this.transform, wanderTarget.transform);
 
         // 💡 수정 1: transform 대신 rb를 전달하여 물리 이동 사용 (벽 뚫기 방지)
         if (rb != null)
             Util.towards(this.rb, speed * 0.5f, dir);
+        if (Vector3.Distance(transform.position, wanderTarget.transform.position) < 1.0f)
+        {
+            // 도착했으니 삭제하고, 타이머도 리셋해서 즉시 다음 행동 준비
+            Destroy(wanderTarget);
+            wanderTarget = null;
+            wanderTimer = wanderInterval; // 다음 프레임에 즉시 PickWanderTarget 호출되게 함
+        }
     }
 
 
     // ---------------------- PickWanderTarget ------------------------
 
-    protected virtual gameObject PickWanderTarget()
+    protected virtual void PickWanderTarget()
     {
         if (wanderTarget != null) Destroy(wanderTarget.gameObject);
 
@@ -298,13 +305,18 @@ public class Creature : MonoBehaviour
                 potentialTarget.z >= minBounds.z + 10 && potentialTarget.z <= maxBounds.z + 10;
 
             if (isInsideBounds)
-                return targetObject = new GameObject("WanderTarget_" + currentRoom.roomID);
-
+            {
+                // 💡 2. 새 오브젝트 생성 및 위치 할당
+                wanderTarget = new GameObject("WanderTarget_" + currentRoom.roomID);
+                wanderTarget.transform.position = potentialTarget;
+                return; // 생성 완료, 종료
+            }
             attempts++;
         } while (attempts < maxAttempts);
 
         // 실패 시 (Fallback)
-        return fallbackObject = new GameObject("WanderTarget_Fallback_" + currentRoom.roomID);
+        wanderTarget = new GameObject("WanderTarget_Fallback_" + currentRoom.roomID);
+        wanderTarget.transform.position = center;
     }
 
     protected void UpdateStatusString()

@@ -29,6 +29,14 @@ public class Convey : Eater
         }
         base.UpdateStatusString();
     }
+
+    protected override void foodAction()
+    {
+        if (nearestFood is Eater eater)
+        {
+            if (eater.isFull) base.foodAction();
+        }
+    }
     protected override void PickWanderTarget()
     {
         if (currentRoom == null) return;

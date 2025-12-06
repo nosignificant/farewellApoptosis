@@ -6,6 +6,7 @@ using UnityEngine.UI; // UnityEngine.UI는 여기서 필요 없지만, 이전 �
 
 public class Eater : Creature
 {
+    public bool isFull = false;
     protected override void Update()
     {
         base.CheckNearby();
@@ -16,12 +17,18 @@ public class Eater : Creature
         }
         else if (nearestFood != null)
         {
-            base.foodAction();
+            foodAction();
         }
         else
         {
             base.Wander();
         }
+    }
+
+    protected override void foodAction()
+    {
+        base.foodAction();
+        isFull = true;
     }
 }
 

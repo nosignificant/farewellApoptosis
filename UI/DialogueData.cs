@@ -42,7 +42,9 @@ public static class DialogueData
                 // 1. 처음 도착했을 때 (기본)
                 {"startEvent", new List<string>
                     {
-
+"이곳에 보이는 것은 생산 나무입니다.",
+"그리고 오른 편에는 작동하지 않는 생물 부화기가 있습니다.",
+"회로를 조정하여 해당 생물 부화기가 작동하게 하십시오."
                     }
                 },
                 // 2. 플레이어가 회로를 가지고 있을 때
@@ -50,7 +52,6 @@ public static class DialogueData
                     {   "이곳에 보이는 것은 생산 나무입니다.",
                         "생물들은 이 나무에서 자라는 정보를 먹고 활동합니다.",
                         "이전 방에서 확득한 회로를 이쪽에 연결하십시오.",
-
                     }
                 },
                 // 3. 이미 수리가 끝났을 때
@@ -63,6 +64,16 @@ public static class DialogueData
                 }
             }
         },
+        {"tut_02", new Dictionary<string, List<string>>
+        {
+{"startEvent", new List<string>
+{
+"이곳에는 또 다른 방식으로 활동하는 생물이 있습니다.",
+"이 생물이 반응하는 방식을 알아내십시오."
+}
+            }
+        }
+            }
     };
 
     // 💡 수정: visitedCount 대신 conditionKey(상태 키)를 받습니다.
