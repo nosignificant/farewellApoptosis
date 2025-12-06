@@ -27,6 +27,7 @@ public class CurrentSentient : MonoBehaviour
         {
             sentientData.Add(creatureID, 0);
         }
+        // 1을 받아서 더해야 정상적으로 1씩 늘어납니다.
         sentientData[creatureID] += amount;
     }
 

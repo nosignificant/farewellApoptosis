@@ -35,20 +35,14 @@ public class p53Log : MonoBehaviour
     // 💡 1. 실시간 상태 감지 (Update)
     void Update()
     {
-        // 플레이어가 안에 있고, 플레이어 정보가 있을 때만 실행
         if (isPlayerIn && currentPlayer != null)
         {
-            // (1) 현재 상황 파악 (방문 횟수, 회로 소지 여부 등)
             int visitCount = currentPlayer.GetVisitCount(roomID);
-            Debug.Log("player visted count" + roomID + "," + visitCount);
             string newConditionKey = CheckCurrentCondition(visitCount);
 
-            // (2) 상황이 바뀌었는지 체크! (입장 직후 or 회로 획득 시)
             if (newConditionKey != lastConditionKey)
             {
                 Debug.Log($"상태 변경 감지: {lastConditionKey} -> {newConditionKey}");
-
-                // (3) 변경된 상황 처리 (대사 재생 + 문 열기 등)
                 ProcessCondition(newConditionKey);
             }
         }
@@ -80,8 +74,6 @@ public class p53Log : MonoBehaviour
             chatLog.Post("안내를 끝까지 듣고 이동하시길 바랍니다.");
             Debug.Log("대사 중단됨.");
         }
-
-        // 코루틴 정리
         if (dialogueCoroutine != null)
         {
             StopCoroutine(dialogueCoroutine);
@@ -99,12 +91,15 @@ public class p53Log : MonoBehaviour
         // (1) 상태 업데이트 (중복 방지)
         lastConditionKey = conditionKey;
 
-        // (2) 액션 실행: 문 열기 등 물리적 변화
         if (roomID == "tut_00" && conditionKey == "hasCircuit")
         {
             if (linkedDoor != null) { linkedDoor.OpenTheDoor(true); }
         }
         if (roomID == "tut_01" && conditionKey == "repaired")
+        {
+            if (linkedDoor != null) linkedDoor.OpenTheDoor(true);
+        }
+        if (roomID == "tut_04" && conditionKey == "endTutorial")
         {
             if (linkedDoor != null) linkedDoor.OpenTheDoor(true);
         }
@@ -123,12 +118,10 @@ public class p53Log : MonoBehaviour
         }
     }
 
-    // 💡 5. 조건 체크 로직 (순수하게 키값만 반환)
-    // 💡 상태 체크 함수 (수정본)
     string CheckCurrentCondition(int visited)
     {
 
-        if (roomID == "tut_00" && visited == 0)
+        if (roomID == "tut_00" && visited == 1)
         {
             if (Player.circuit) return "hasCircuit";
         }
@@ -138,8 +131,12 @@ public class p53Log : MonoBehaviour
             if (linkedSpawner != null && linkedSpawner.SpawnerHasCircuit)
                 return "repaired";
         }
+        if (roomID == "tut_04")
+        {
+            if (CurrentSentient.Instance != null && CurrentSentient.Instance.GetSentientCount(0) > 0)
+                return "endTutorial";
+        }
         if (visited == 0) return "startEvent";
-
         return "endEvent";
     }
 

@@ -27,8 +27,6 @@ public class Creature : MonoBehaviour
     public float eatingDuration = 1.0f;
     //1초에 한입씩 먹음 
     public float damagePerSecond = 1f;
-    private Coroutine eatingCoroutine = null;
-
     [Header("Wander")]
     GameObject wanderTarget;
     float wanderTimer = 0f;

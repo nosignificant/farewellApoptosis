@@ -22,7 +22,7 @@ public class Convey : Eater
         }
         else if (nearestFood != null)
         {
-            base.foodAction();
+            foodAction();
         }
         else
         {
@@ -33,12 +33,21 @@ public class Convey : Eater
 
     protected override void foodAction()
     {
+        if (isEating || nearestFood == null) return;
+
         if (nearestFood is Eater eater)
         {
-            if (eater.isFull) base.foodAction();
-            howManyAte++;
-            if (CurrentSentient.Instance != null)
-                CurrentSentient.Instance.UpdateSentient(CREATURE_ID, howManyAte);
+            if (eater.isFull)
+            {
+                Debug.Log(this.name + " ate one Eater." + eater.isFull);
+
+                howManyAte++;
+
+                if (CurrentSentient.Instance != null)
+                    CurrentSentient.Instance.UpdateSentient(eater.CREATURE_ID, 1);
+
+                base.foodAction();
+            }
         }
     }
     protected override void PickWanderTarget()

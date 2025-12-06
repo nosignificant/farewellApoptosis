@@ -11,9 +11,8 @@ public class sentientUI : MonoBehaviour
     void Start()
     {
         amount = this.gameObject.GetComponent<TMP_Text>();
-        amount.text = "0";
-    }
 
+    }
     void Update()
     {
         if (CurrentSentient.Instance != null)

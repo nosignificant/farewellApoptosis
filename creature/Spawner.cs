@@ -53,7 +53,11 @@ public class Spawner : MonoBehaviour, IInteractable
 
     void Update()
     {
-        if (SpawnerHasCircuit && spawnedEaters.Count == 0) AutoSpawn();
+        if (SpawnerHasCircuit && spawnedEaters.Count == 0)
+        {
+            Debug.Log("all eater have been ate. respawn");
+            AutoSpawn();
+        }
     }
     public void AutoSpawn()
     {
