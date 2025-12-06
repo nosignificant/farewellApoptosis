@@ -50,6 +50,11 @@ public class Spawner : MonoBehaviour, IInteractable
         if (currentRoom != null)
             currentRoom.RegisterSpawner(this);
     }
+
+    void Update()
+    {
+        if (SpawnerHasCircuit && spawnedEaters.Count == 0) AutoSpawn();
+    }
     public void AutoSpawn()
     {
         // 길이 0 이면 그냥 끝

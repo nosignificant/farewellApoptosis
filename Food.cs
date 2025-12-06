@@ -1,34 +1,23 @@
 using UnityEngine;
 using System.Collections;
-public class Food : MonoBehaviour
+public class Food : Creature
 {
-    public int foodHealth;
-    public int MAX_HP = 3;
     public float respawnTime = 10f;
-
     private Renderer meshRenderer;
     private Collider foodCollider;
 
     void Start()
     {
-        foodHealth = MAX_HP;
         meshRenderer = GetComponent<Renderer>();
         foodCollider = GetComponent<Collider>();
+        currentRoom = Util.FindCurrentRoom(transform.position);
+        if (currentRoom != null) currentRoom.OnCreatureEnter(this);
     }
 
-
-    public void TakeBite(int damage)
+    protected override void Die()
     {
-        Debug.Log("food health decreased");
-        foodHealth -= damage;
-
-        if (foodHealth <= 0)
-        {
-            StartCoroutine(HideAndRespawn());
-        }
+        StartCoroutine(HideAndRespawn());
     }
-
-
     IEnumerator HideAndRespawn()
     {
         meshRenderer.enabled = false;
@@ -36,7 +25,7 @@ public class Food : MonoBehaviour
 
         yield return new WaitForSeconds(respawnTime);
 
-        foodHealth = MAX_HP;
+        currentHP = MAX_HP;
         meshRenderer.enabled = true;
         foodCollider.enabled = true;
     }

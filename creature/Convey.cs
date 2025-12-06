@@ -27,6 +27,7 @@ public class Convey : Eater
         {
             base.Wander();
         }
+        base.UpdateStatusString();
     }
     protected override void PickWanderTarget()
     {

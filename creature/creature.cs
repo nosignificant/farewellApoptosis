@@ -15,6 +15,8 @@ public class Creature : MonoBehaviour
     public float attackSpeed = 10f;
     public float radius = 10f;
     public int runAway = 2;
+    public int MAX_HP;
+    public int currentHP;
 
     protected Rigidbody rb;
 
@@ -37,11 +39,14 @@ public class Creature : MonoBehaviour
 
     public List<int> enemyCreatureIDs = new List<int>();
     public List<int> friendCreatureIDs = new List<int>();
-    public List<Creature> interested = new List<Creature>();
+    public List<int> foodCreatureIDs = new List<int>();
+    public List<int> interestedCreatureIDs = new List<int>();
 
     public List<Creature> friends = new List<Creature>();
+    public List<Creature> interested = new List<Creature>();
 
-    protected GameObject nearestEnemy;
+
+    protected Creature nearestEnemy;
     protected float nearestEnemyDist;
     protected bool isAttacking = false;
 
@@ -59,6 +64,7 @@ public class Creature : MonoBehaviour
     protected virtual void Awake()
     {
         rb = GetComponent<Rigidbody>();
+        currentHP = MAX_HP;
     }
 
     protected virtual void Update() { }
@@ -91,31 +97,11 @@ public class Creature : MonoBehaviour
         foreach (Collider hit in hits)
         {
             if (hit.gameObject == gameObject) continue;
-
-            switch (hit.tag)
-            {
-                case "Food":
-                    UpdateNearestFood(hit);
-                    break;
-                case "Creature":
-                    UpdateNearCreature(hit);
-                    break;
-            }
-        }
-    }
-    //제일 가까이 있는 음식 확인
-    void UpdateNearestFood(Collider hit)
-    {
-        float dist = Vector3.Distance(transform.position, hit.transform.position);
-
-        if (dist < nearestFoodDist)
-        {
-            nearestFoodDist = dist;
-            nearestFood = hit.GetComponent<Food>();
+            UpdateNearCreature(hit);
         }
     }
 
-    void UpdateNearCreature(Collider hit)
+    protected void UpdateNearCreature(Collider hit)
     {
         Creature other = hit.GetComponent<Creature>();
         if (other == null) return;
@@ -127,70 +113,60 @@ public class Creature : MonoBehaviour
             if (dist < nearestEnemyDist)
             {
                 nearestEnemyDist = dist;
-                nearestEnemy = hit.gameObject;
+                nearestEnemy = other;
             }
         }
         else if (friendCreatureIDs.Contains(other.CREATURE_ID))
+        {
             if (!friends.Contains(other)) friends.Add(other);
-            else { if (!interested.Contains(other)) interested.Add(other); }
+
+        }
+        else if (interestedCreatureIDs.Contains(other.CREATURE_ID))
+        {
+            if (!interested.Contains(other)) interested.Add(other);
+
+        }
+        else if (foodCreatureIDs.Contains(other.CREATURE_ID))
+        {
+            float dist = Vector3.Distance(transform.position, hit.transform.position);
+
+            if (dist < nearestEnemyDist)
+            {
+                nearestEnemyDist = dist;
+                nearestEnemy = other;
+            }
+        }
     }
 
     // ---------------------- FOOD ACTION ------------------------
 
     public void foodAction()
     {
-        if (nearestFood == null) return;
-        if (isEating) return;
-        //여기부터 가까이 있는 음식까지의 거리 
-        float distance = Vector3.Distance(this.transform.position, nearestFood.transform.position);
+        if (nearestFood == null || isEating) return;
 
-        if (distance > 8)
+        isEating = true;
+        creature_statues = "eating";
+
+        // 💡 공통 코루틴 실행: "음식한테 가서 -> 먹어라(TakeBite)"
+        StartCoroutine(ChaseAndInteractRoutine(nearestFood.gameObject, 8f, () =>
         {
-            Vector3 dir = Util.GetDirectionTo(this.transform, nearestFood.transform);
-            if (rb != null)
-                Util.towards(rb, speed, dir);
-        }
-        else
-        {
-            isEating = true;
-            creature_statues = "eating";
-            StartCoroutine(EatFoodRoutine(nearestFood));
-        }
+            nearestFood.TakeDamage(1);
+        }));
     }
 
-    // ---------------------- EatFoodRoutine ------------------------
-
-    IEnumerator EatFoodRoutine(Food foodToEat)
+    public virtual void TakeDamage(int damage)
     {
-        // 💡 목표 거리 설정
-        const float STOP_DISTANCE = 8f;
-        float distance = 0f;
+        currentHP -= damage;
+        Debug.Log($"{name} took {damage} damage. HP: {currentHP}");
 
-        while (foodToEat != null && foodToEat.foodHealth > 0)
+        if (currentHP <= 0)
         {
-            if (foodToEat == null || !foodToEat.gameObject.activeInHierarchy) break;
-            distance = Vector3.Distance(this.transform.position, foodToEat.transform.position);
-
-            // 너무 멀면 일단 가까이감
-            if (distance > STOP_DISTANCE)
-            {
-                Vector3 dir = Util.GetDirectionTo(this.transform, foodToEat.transform);
-                Util.towards(rb, speed, dir);
-                yield return null;
-                continue; // 너무 멀리 있을 때 음식 먹는 행동은 아직 안함
-            }
-
-            // 거기까지 갔는데 없을 수도 있으니 또 확인
-            if (foodToEat == null) break;
-
-            foodToEat.TakeBite(1);
-            yield return new WaitForSeconds(damagePerSecond);
+            Die();
         }
-
-
-        nearestFood = null;
-        isEating = false;
-        PickWanderTarget();
+    }
+    protected virtual void Die()
+    {
+        Destroy(gameObject); // 기본 사망 로직
     }
 
 
@@ -198,16 +174,17 @@ public class Creature : MonoBehaviour
     public void EnemyAction1()
     {
         if (nearestEnemy == null) return;
+        isAttacking = true;
+        creature_statues = "attacking";
 
         Vector3 dirToEnemy = Util.GetDirectionTo(this.transform, nearestEnemy.transform);
 
         if (friends.Count >= runAway)
         {
-            if (!isAttacking)
+            StartCoroutine(ChaseAndInteractRoutine(nearestEnemy.gameObject, 3f, () =>
             {
-                creature_statues = "attacking";
-                StartCoroutine(AttackEnemy());
-            }
+                nearestEnemy.TakeDamage(1);
+            }));
 
         }
         else
@@ -221,41 +198,40 @@ public class Creature : MonoBehaviour
     {
         if (nearestEnemy == null) return;
 
-        Vector3 dirToEnemy = Util.GetDirectionTo(this.transform, nearestEnemy.transform);
-
-        if (!isAttacking)
-        {
-            creature_statues = "attacking";
-            StartCoroutine(AttackEnemy());
-        }
+        StartCoroutine(ChaseAndInteractRoutine(nearestEnemy.gameObject, 3f, () =>
+                {
+                    nearestEnemy.TakeDamage(1);
+                }));
     }
-
-    IEnumerator AttackEnemy()
+    protected IEnumerator ChaseAndInteractRoutine(GameObject target, float stopDist, System.Action onReachAction)
     {
-        isAttacking = true;
-
-        while (nearestEnemy != null &&
-               Vector3.Distance(transform.position, nearestEnemy.transform.position) > 3f)
+        while (target != null && target.activeInHierarchy)
         {
-            Vector3 dir = Util.GetDirectionTo(this.transform, nearestEnemy.transform);
-            Util.towards(rb, attackSpeed, dir);
-            yield return null;
+            float distance = Vector3.Distance(transform.position, target.transform.position);
+
+            // 1. 거리가 멀면 추격
+            if (distance > stopDist)
+            {
+                Vector3 dir = Util.GetDirectionTo(transform, target.transform);
+                Util.towards(rb, speed, dir); // 이동 속도는 상황에 따라 speed 변수를 조절하거나 인자로 받아도 됨
+                yield return null;
+                continue;
+            }
+
+            // 2. 도착했으면 행동 실행 (먹기 or 공격)
+            // (Orbit 같은 연출이 필요하면 여기에 추가)
+
+            onReachAction?.Invoke(); // 💡 여기서 구체적인 행동을 실행!
+
+            // 3. 딜레이 (공격 속도 or 먹는 속도)
+            yield return new WaitForSeconds(damagePerSecond); // 변수명은 attackInterval 등으로 일반화하는 게 좋음
         }
 
-        yield return new WaitForSeconds(0.5f);
-
-        if (nearestEnemy != null)
-        {
-            Vector3 dir = Util.GetDirectionTo(this.transform, nearestEnemy.transform);
-            Util.moveBack(rb, speed, dir);
-        }
-
+        // 행동 종료 후 정리
+        isEating = false;
         isAttacking = false;
+        PickWanderTarget();
     }
-
-
-
-
 
     // ---------------------- WANDER ACTION ------------------------
 
@@ -280,7 +256,7 @@ public class Creature : MonoBehaviour
 
     // ---------------------- PickWanderTarget ------------------------
 
-    protected virtual void PickWanderTarget()
+    protected virtual gameObject PickWanderTarget()
     {
         if (wanderTarget != null) Destroy(wanderTarget.gameObject);
 
@@ -317,29 +293,46 @@ public class Creature : MonoBehaviour
             Vector3 maxBounds = center + extents;
 
             bool isInsideBounds =
-                potentialTarget.x >= minBounds.x && potentialTarget.x <= maxBounds.x &&
-                potentialTarget.y >= minBounds.y && potentialTarget.y <= maxBounds.y &&
-                potentialTarget.z >= minBounds.z && potentialTarget.z <= maxBounds.z;
-
-            // 4. (추가) 만약 관심 대상을 보러 가는데, 그 위치가 방 밖이라면?
-            // -> 다시 내 주변을 찾도록 searchPivot을 초기화하고 재시도하게 할 수도 있음 (선택 사항)
+                potentialTarget.x >= minBounds.x + 10 && potentialTarget.x <= maxBounds.x - 10 &&
+                potentialTarget.y >= minBounds.y + 10 && potentialTarget.y <= maxBounds.y + 10 &&
+                potentialTarget.z >= minBounds.z + 10 && potentialTarget.z <= maxBounds.z + 10;
 
             if (isInsideBounds)
-            {
-                GameObject targetObject = new GameObject("WanderTarget_" + currentRoom.roomID);
-                targetObject.transform.position = potentialTarget;
-                wanderTarget = targetObject.transform;
-                return;
-            }
+                return targetObject = new GameObject("WanderTarget_" + currentRoom.roomID);
 
             attempts++;
         } while (attempts < maxAttempts);
 
         // 실패 시 (Fallback)
-        GameObject fallbackObject = new GameObject("WanderTarget_Fallback_" + currentRoom.roomID);
-        fallbackObject.transform.position = center;
-        wanderTarget = fallbackObject.transform;
+        return fallbackObject = new GameObject("WanderTarget_Fallback_" + currentRoom.roomID);
     }
 
+    protected void UpdateStatusString()
+    {
+        if (isEating)
+        {
+            creature_statues = "Eating";
+        }
+        else if (isAttacking)
+        {
+            creature_statues = "Attacking";
+        }
+        else if (nearestEnemy != null && friends.Count < runAway) // 도망 조건
+        {
+            creature_statues = "Fleeing";
+        }
+        else if (nearestEnemy != null) // 추격 조건 (공격 전)
+        {
+            creature_statues = "Chasing Enemy";
+        }
+        else if (nearestFood != null) // 먹이 발견 (먹기 전)
+        {
+            creature_statues = "Chasing Food";
+        }
+        else
+        {
+            creature_statues = "Wandering";
+        }
+    }
 }
 
