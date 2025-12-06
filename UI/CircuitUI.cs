@@ -5,8 +5,13 @@ using TMPro;
 
 public class CircuitUI : MonoBehaviour
 {
+    public TMP_Text circuit;  // "now producing: X"
 
-    public TMP_Text circuitText;  // "now producing: X"
+    void start()
+    {
+        circuit = this.gameObject.GetComponent<TMP_Text>();
+        circuit.text = "회로 소지 : X";
+    }
 
     void Update()
     {
@@ -14,13 +19,13 @@ public class CircuitUI : MonoBehaviour
     }
     void ControlCircuittext()
     {
-        if (Player.isEaterSelectOpen)
+        if (Player.circuit)
         {
-            circuitText.text = "circuit O";
+            circuit.text = "회로 소지 : O";
         }
-        if (!Player.isEaterSelectOpen)
+        if (!Player.circuit)
         {
-            circuitText.text = "circuit X";
+            circuit.text = "회로 소지 : X";
         }
     }
 

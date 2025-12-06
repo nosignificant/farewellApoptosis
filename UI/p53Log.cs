@@ -40,6 +40,7 @@ public class p53Log : MonoBehaviour
         {
             // (1) 현재 상황 파악 (방문 횟수, 회로 소지 여부 등)
             int visitCount = currentPlayer.GetVisitCount(roomID);
+            Debug.Log("player visted count" + roomID + "," + visitCount);
             string newConditionKey = CheckCurrentCondition(visitCount);
 
             // (2) 상황이 바뀌었는지 체크! (입장 직후 or 회로 획득 시)
@@ -65,17 +66,15 @@ public class p53Log : MonoBehaviour
 
         if (currentPlayer != null)
         {
-            // 💡 핵심: 들어오자마자 Update가 "어? 상태가 비어있네? 처리해야지!" 라고 인식하게 만듦
             lastConditionKey = "";
         }
     }
 
-    // 💡 3. 퇴장 처리 (OnTriggerExit)
     private void OnTriggerExit(Collider other)
     {
         if (!other.CompareTag("Player")) return;
 
-        // 대사 중단 안내
+        if (isPlayerIn == false) return;
         if (!isDialogueFinished && currentRoomLines != null && currentRoomLines.Count > 0)
         {
             chatLog.Post("안내를 끝까지 듣고 이동하시길 바랍니다.");
@@ -91,7 +90,7 @@ public class p53Log : MonoBehaviour
 
         isPlayerIn = false;
         currentPlayer = null;
-        lastConditionKey = ""; // 나갈 때 상태 초기화
+        lastConditionKey = "";
     }
 
     // 💡 4. 액션 및 대사 실행 통합 함수
@@ -103,7 +102,7 @@ public class p53Log : MonoBehaviour
         // (2) 액션 실행: 문 열기 등 물리적 변화
         if (roomID == "tut_00" && conditionKey == "hasCircuit")
         {
-            if (linkedDoor != null) linkedDoor.OpenTheDoor(true);
+            if (linkedDoor != null) { linkedDoor.OpenTheDoor(true); }
         }
         if (roomID == "tut_01" && conditionKey == "repaired")
         {
@@ -125,24 +124,22 @@ public class p53Log : MonoBehaviour
     }
 
     // 💡 5. 조건 체크 로직 (순수하게 키값만 반환)
+    // 💡 상태 체크 함수 (수정본)
     string CheckCurrentCondition(int visited)
     {
-        // [우선순위 1] 특수 조건 (회로 획득, 수리 완료 등)
-        if (roomID == "tut_00")
+
+        if (roomID == "tut_00" && visited == 0)
         {
             if (Player.circuit) return "hasCircuit";
         }
 
         if (roomID == "tut_01")
         {
-            if (linkedSpawner != null && linkedSpawner.SpawnerHasCircuit) return "repaired";
-            if (Player.circuit) return "hasCircuit";
+            if (linkedSpawner != null && linkedSpawner.SpawnerHasCircuit)
+                return "repaired";
         }
-
-        // [우선순위 2] 첫 방문
         if (visited == 0) return "startEvent";
 
-        // [우선순위 3] 일반 재방문
         return "endEvent";
     }
 
@@ -168,7 +165,7 @@ public class p53Log : MonoBehaviour
             if (currentPlayer != null)
             {
                 currentPlayer.AddVisitRecord(roomID);
-                Debug.Log($"{roomID} 대사 완료. 방문 횟수 증가.");
+                Debug.Log($"{roomID} 대사 완료.{currentPlayer.GetVisitCount(roomID)}");
             }
         }
     }

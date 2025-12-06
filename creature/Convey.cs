@@ -3,7 +3,8 @@ using UnityEngine;
 public class Convey : Eater
 {
     [Header("Convey 설정")]
-    public float roomChangeChance = 0.5f; // 50% 확률로 방 이동
+    public float roomChangeChance = 0.2f; // 50% 확률로 방 이동
+    public int howManyAte = 0;
     protected override void Start()
     {
         currentRoom = Util.FindCurrentRoom(transform.position);
@@ -35,6 +36,9 @@ public class Convey : Eater
         if (nearestFood is Eater eater)
         {
             if (eater.isFull) base.foodAction();
+            howManyAte++;
+            if (CurrentSentient.Instance != null)
+                CurrentSentient.Instance.UpdateSentient(CREATURE_ID, howManyAte);
         }
     }
     protected override void PickWanderTarget()
