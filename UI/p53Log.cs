@@ -71,7 +71,6 @@ public class p53Log : MonoBehaviour
         if (isPlayerIn == false) return;
         if (!isDialogueFinished && currentRoomLines != null && currentRoomLines.Count > 0)
         {
-            chatLog.Post("안내를 끝까지 듣고 이동하시길 바랍니다.");
             Debug.Log("대사 중단됨.");
         }
         if (dialogueCoroutine != null)

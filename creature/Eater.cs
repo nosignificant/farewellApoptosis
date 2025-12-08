@@ -6,6 +6,10 @@ using UnityEngine.UI; // UnityEngine.UI는 여기서 필요 없지만, 이전 �
 
 public class Eater : Creature
 {
+    protected override void Start()
+    {
+        base.Start();
+    }
     public bool isFull = false;
     protected override void Update()
     {
@@ -23,6 +27,7 @@ public class Eater : Creature
         {
             base.Wander();
         }
+        base.UpdateStatusString();
     }
 
     protected override void foodAction()

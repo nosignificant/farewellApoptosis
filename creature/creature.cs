@@ -52,11 +52,16 @@ public class Creature : MonoBehaviour
 
     public Room currentRoom;
 
+    [Header("UI Settings")]
+    public GameObject uiPrefab;
+    public float uiOffsetY = 2.0f;
     public string creature_statues = null;
+    private CreatureHUD myHUD;
 
     protected virtual void Start()
     {
         PickWanderTarget();
+        CreateHUD();
     }
 
     protected virtual void Awake()
@@ -342,6 +347,30 @@ public class Creature : MonoBehaviour
         else
         {
             creature_statues = "Wandering";
+        }
+    }
+
+    // ---------------------- PickWanderTarget ------------------------
+
+    void CreateHUD()
+    {
+        if (uiPrefab == null) return;
+        Canvas canvas = FindObjectOfType<Canvas>();
+
+        if (canvas != null)
+        {
+            GameObject hudObj = Instantiate(uiPrefab, canvas.transform);
+            myHUD = hudObj.GetComponent<CreatureHUD>();
+            myHUD.targetCreature = this;
+
+            if (myHUD != null)
+            {
+                myHUD.targetCreature = this;
+            }
+        }
+        else
+        {
+            Debug.LogError("씬에 Canvas가 없습니다! UI를 생성할 수 없습니다.");
         }
     }
 }
