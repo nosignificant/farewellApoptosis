@@ -1,9 +1,11 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System;
 
 
 public class Player : MonoBehaviour
 {
+    public static Player Instance;
     // UI 
     public GameObject pressE;
     public GameObject pressF;
@@ -17,10 +19,21 @@ public class Player : MonoBehaviour
 
     //where is player
     public string roomID;
-    private Dictionary<string, int> roomMemories = new Dictionary<string, int>();
 
     //player status
     public string nowPlayerDoing = null;
+
+    public event Action<string> OnPlayerRoom;
+
+    void Awake()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else Destroy(gameObject);
+    }
 
     void Update()
     {
@@ -41,7 +54,9 @@ public class Player : MonoBehaviour
         }
         if (other.CompareTag("Room"))
         {
+            if (this.roomID == other.name) return;
             roomID = other.name;
+            OnPlayerRoom?.Invoke(roomID);
         }
     }
 
@@ -137,23 +152,6 @@ public class Player : MonoBehaviour
         if (Spawner)
             Spawner.isPlayerIn = onOff;
         pressE.SetActive(onOff);
-    }
-
-    public int GetVisitCount(string roomID)
-    {
-        if (roomMemories.ContainsKey(roomID))
-            return roomMemories[roomID];
-        return 0; // 처음이면 0
-    }
-
-    public void AddVisitRecord(string roomID)
-    {
-        if (roomMemories.ContainsKey(roomID))
-            roomMemories[roomID]++;
-        else
-            roomMemories[roomID] = 1;
-
-        Debug.Log($"[Player Memory] Room {roomID} visited {roomMemories[roomID]} times.");
     }
 
 }

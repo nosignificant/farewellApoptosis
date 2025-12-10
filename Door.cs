@@ -10,29 +10,31 @@ public class Door : MonoBehaviour
     [Header("Current State")]
     public bool isDoorOpen = false;
 
+    public string roomID;
+    [SerializeField] private string conditionToOpen;
+
     private Vector3 closedPosition;
     private Vector3 openPosition;
-    private Coroutine movingRoutine; // 중복 동작 방지
+    private Coroutine movingRoutine;
+
+    void OnEnable()
+    {// p53에서 일어나는 일 구독 
+        p53Log.OnRoomConditionMet += HandleRoomConditionMet;
+
+    }
+    void OnDisable()
+    {
+        p53Log.OnRoomConditionMet -= HandleRoomConditionMet;
+    }
 
     void Start()
     {
-        // 1. 문이 닫혀있는 초기 위치 저장
+        setThisDoorKey();
         closedPosition = transform.position;
-
-        // 2. 문이 완전히 열리는 목표 위치 계산 (현재 위치에서 Y축으로만 올림)
         openPosition = closedPosition + new Vector3(0, openHeight * 10, 0);
     }
-
-    void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.O)) OpenTheDoor(true);
-        if (Input.GetKeyDown(KeyCode.C)) OpenTheDoor(false);
-    }
-
-    // 외부에서 문 열림/닫힘을 요청할 때 사용하는 공용 함수
     public void OpenTheDoor(bool open)
     {
-        // 이미 움직이고 있거나, 원하는 상태와 같다면 무시
         if (open == isDoorOpen || movingRoutine != null) return;
 
         isDoorOpen = open;
@@ -43,11 +45,31 @@ public class Door : MonoBehaviour
         movingRoutine = StartCoroutine(MoveDoor(target));
     }
 
-    // (선택 사항) 토글 기능을 위한 함수
-    public void ToggleDoor()
+    void HandleRoomConditionMet(string p53roomID, string conditionKey)
     {
-        OpenTheDoor(!isDoorOpen);
+        if (p53roomID == roomID && conditionKey == conditionToOpen)
+            OpenTheDoor(true);
     }
+
+    void setThisDoorKey()
+    {
+        switch (roomID)
+        {
+            case "tut_00":
+                conditionToOpen = "hasCircuit";
+                break;
+
+            case "tut_01":
+                conditionToOpen = "repaired";
+                break;
+
+            case "tut_04":
+                conditionToOpen = "endTutorial";
+                break;
+        }
+    }
+
+
 
     // ----------------------------------------------------
     // 💡 문을 부드럽게 움직이는 코루틴

@@ -40,7 +40,6 @@ public class Spawner : MonoBehaviour, IInteractable
         }
     }
     //Room setting 
-    RoomIDManager roomIDManager;
     public Room currentRoom;
 
     void Start()

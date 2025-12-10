@@ -15,11 +15,11 @@ public class CurrentSentient : MonoBehaviour
         {
             Instance = this;
             DontDestroyOnLoad(gameObject);
+            Debug.Log("current sentient load");
         }
         else
-        {
             Destroy(gameObject);
-        }
+
     }
     public void UpdateSentient(int creatureID, int amount)
     {
