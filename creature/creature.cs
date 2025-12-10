@@ -350,7 +350,7 @@ public class Creature : MonoBehaviour
         }
     }
 
-    // ---------------------- PickWanderTarget ------------------------
+    // ---------------------- CreateHUD ------------------------
 
     void CreateHUD()
     {

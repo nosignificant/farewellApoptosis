@@ -22,7 +22,7 @@ public class CreatureHUD : MonoBehaviour
 
     private Camera mainCam;
     private CanvasGroup canvasGroup;
-    private Collider targetCollider; // 💡 생물의 크기를 잴 콜라이더
+    public Collider targetCollider;
 
     // 3D 박스의 8개 모서리를 계산하기 위한 배열 미리 할당
     private Vector3[] corners = new Vector3[8];
@@ -40,8 +40,6 @@ public class CreatureHUD : MonoBehaviour
         {
             statusBoxRect = transform.GetChild(0).GetComponent<RectTransform>();
         }
-
-        // 💡 타겟의 콜라이더 가져오기 (이게 있어야 크기를 잼)
         if (targetCreature != null)
         {
             targetCollider = targetCreature.GetComponent<Collider>();
@@ -50,43 +48,30 @@ public class CreatureHUD : MonoBehaviour
 
     void LateUpdate()
     {
-        // 타겟이 없거나 콜라이더가 없으면 숨김
         if (targetCreature == null || targetCollider == null)
         {
             canvasGroup.alpha = 0;
             return;
         }
 
-        // 1. 거리 체크 (너무 멀면 안 그림)
+        // 1. 거리 및 화면 뒤 체크 pos - pos = dist 
         float dist = Vector3.Distance(mainCam.transform.position, targetCreature.transform.position);
-        if (dist > maxVisibleDistance || dist < minVisibleDistance)
-        {
-            canvasGroup.alpha = 0;
-            return;
-        }
-
-        // 2. 화면 뒤에 있는지 체크 (간단히 중심점으로)
+        // 중심좌표 // world >> screen 좌표 , 스크린 좌표로 바꿔놨기때문에 z좌표는 카메라랑 거리 
         Vector3 centerScreenPos = mainCam.WorldToScreenPoint(targetCollider.bounds.center);
-        if (centerScreenPos.z < 0)
+
+        // 거리가 너무 멀거나, 카메라 뒤에 있으면 숨김
+        if (dist > maxVisibleDistance || dist < minVisibleDistance || centerScreenPos.z < 0)
         {
             canvasGroup.alpha = 0;
             return;
         }
 
         canvasGroup.alpha = 1;
+        if (statusText != null) statusText.text = targetCreature.creature_statues ?? "";
 
-        // 3. 상태 텍스트 갱신
-        if (statusText != null)
-        {
-            statusText.text = targetCreature.creature_statues ?? "";
-        }
-
-        // =========================================================
-        // 💡 핵심: 3D Bounds를 2D 화면 사각형으로 변환
-        // =========================================================
         Bounds b = targetCollider.bounds;
 
-        // 3D 박스의 8개 모서리 좌표 계산
+        // 8개 모서리 좌표
         corners[0] = new Vector3(b.min.x, b.min.y, b.min.z);
         corners[1] = new Vector3(b.min.x, b.min.y, b.max.z);
         corners[2] = new Vector3(b.min.x, b.max.y, b.min.z);
@@ -96,15 +81,15 @@ public class CreatureHUD : MonoBehaviour
         corners[6] = new Vector3(b.max.x, b.max.y, b.min.z);
         corners[7] = new Vector3(b.max.x, b.max.y, b.max.z);
 
-        // 화면상에서 최소/최대 x, y 찾기
-        float minX = float.MaxValue;
-        float maxX = float.MinValue;
-        float minY = float.MaxValue;
-        float maxY = float.MinValue;
+        float minX = float.MaxValue; float maxX = float.MinValue;
+        float minY = float.MaxValue; float maxY = float.MinValue;
 
         for (int i = 0; i < 8; i++)
         {
             Vector3 screenPos = mainCam.WorldToScreenPoint(corners[i]);
+
+            // [중요] 모서리 중 하나라도 카메라 뒤로 넘어가면 계산이 튀는 것을 방지
+            if (screenPos.z < 0) continue;
 
             if (screenPos.x < minX) minX = screenPos.x;
             if (screenPos.x > maxX) maxX = screenPos.x;
@@ -112,26 +97,21 @@ public class CreatureHUD : MonoBehaviour
             if (screenPos.y > maxY) maxY = screenPos.y;
         }
 
-        if (minX == float.MaxValue)
-        {
-            canvasGroup.alpha = 0;
-            return;
-        }
+        // 유효한 좌표가 없으면 리턴
+        if (minX == float.MaxValue || maxX == float.MinValue) return;
 
-        // 4. UI 박스 크기 및 위치 적용
-        float width = maxX - minX + (padding * 2);
-        float height = maxY - minY + (padding * 2);
-        width = Mathf.Min(maxX - minX + (padding * 2), maxBoxWidth);
-        height = Mathf.Min(maxY - minY + (padding * 2), maxBoxHeight);
+        // 1. 실제 계산된 크기
+        float rawWidth = (maxX - minX) / 2;
+        float rawHeight = (maxY - minY) / 2;
 
-        creatureBoxRect.sizeDelta = new Vector2(width, height);
-        creatureBoxRect.position = new Vector2((minX + maxX) / 2, (minY + maxY) / 2);
+        float finalWidth = Mathf.Clamp(rawWidth, 0, maxBoxWidth);
+        float finalHeight = Mathf.Clamp(rawHeight, 0, maxBoxHeight);
 
-        // 5. 상태 박스는 몸통 박스 바로 위에 붙임
-        if (statusBoxRect != null)
-        {
-            // 몸통 박스 위쪽(maxY) + 여백(padding) 위치로 이동
-            statusBoxRect.position = new Vector2((minX + maxX) / 2, maxY + padding + 20f);
-        }
+        // 3. UI 적용
+        creatureBoxRect.sizeDelta = new Vector2(finalWidth, finalHeight);
+
+        // 위치는 항상 물체의 중심을 따라가게 설정 (크기가 제한되어도 위치는 정확히 따라감)
+        Vector3 screenCenter = mainCam.WorldToScreenPoint(b.center);
+        creatureBoxRect.position = screenCenter;
     }
 }

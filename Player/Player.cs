@@ -2,8 +2,6 @@ using UnityEngine;
 using System.Collections.Generic;
 
 
-[RequireComponent(typeof(CharacterController))]
-
 public class Player : MonoBehaviour
 {
     // UI 
@@ -157,4 +155,5 @@ public class Player : MonoBehaviour
 
         Debug.Log($"[Player Memory] Room {roomID} visited {roomMemories[roomID]} times.");
     }
+
 }
