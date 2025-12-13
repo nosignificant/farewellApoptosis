@@ -54,9 +54,9 @@ public class Spawner : MonoBehaviour, IInteractable
     {
         if (SpawnerHasCircuit && spawnedEaters.Count == 0)
         {
-            Debug.Log("all eater have been ate. respawn");
             AutoSpawn();
         }
+        // 나중에 하세요 if (!SpawnerHasCircuit && spawnedEaters.Count != 0) StartCoroutine(DestroyAll());
     }
     public void AutoSpawn()
     {

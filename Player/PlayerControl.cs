@@ -172,11 +172,13 @@ public class PlayerControl : MonoBehaviour
     {
         if (Player.isPlayerLockOn)
         {
-            rotation.y = transform.eulerAngles.y;
+            rotation.y = cameraTransform.eulerAngles.y;
+
             float currentX = cameraTransform.localEulerAngles.x;
             if (currentX > 180) currentX -= 360;
-
             rotation.x = currentX;
+            transform.rotation = Quaternion.Euler(0f, rotation.y, 0f);
+            cameraTransform.localRotation = Quaternion.Euler(rotation.x, 0f, 0f);
 
             return;
         }

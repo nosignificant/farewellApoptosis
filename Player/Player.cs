@@ -22,6 +22,8 @@ public class Player : MonoBehaviour
     public static bool isSelectingEater = false;
 
     //where is player
+    public Room currentRoom;
+
     public string roomID;
 
     //player status
@@ -59,8 +61,9 @@ public class Player : MonoBehaviour
         }
         if (other.CompareTag("Room"))
         {
-            if (this.roomID == other.name) return;
-            roomID = other.name;
+            if (currentRoom != null && this.currentRoom.roomID == other.name) return;
+            if (RoomManager.Instance != null) currentRoom = RoomManager.Instance.GetRoom(other.name);
+            roomID = currentRoom.roomID;
             OnPlayerRoom?.Invoke(roomID);
         }
     }

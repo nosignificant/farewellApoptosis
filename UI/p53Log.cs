@@ -99,7 +99,12 @@ public class p53Log : MonoBehaviour
 
     string CheckCurrentCondition()
     {
-        if (roomID == "tut_00" && Player.circuit) return "hasCircuit";
+        if (roomID == "tut_00")
+        {
+            if (Player.circuit) return "hasCircuit";
+            if (Player.isPlayerLockOn) return "lockedOn";
+
+        }
 
         if (roomID == "tut_01")
         {

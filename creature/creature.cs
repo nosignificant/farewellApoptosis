@@ -58,6 +58,7 @@ public class Creature : MonoBehaviour
     public string creature_statues = null;
     private CreatureHUD myHUD;
 
+
     protected virtual void Start()
     {
         PickWanderTarget();
@@ -375,8 +376,7 @@ public class Creature : MonoBehaviour
     }
     public bool IsInScreenCenter(Vector2 playerScreenPos)
     {
-        if (myHUD.canvasGroup.alpha == 0) return false;
-
+        if (myHUD == null) return false;
         float padding = 50f;
 
         if (playerScreenPos.x >= myHUD.minX - padding && playerScreenPos.x <= myHUD.maxX + padding &&
