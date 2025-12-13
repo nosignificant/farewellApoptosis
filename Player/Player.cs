@@ -16,7 +16,7 @@ public class Player : MonoBehaviour
     public static bool isEaterSelectOpen = false;
 
     public static bool isPlayerLockOn = false;
-    public static bool circuit = true;
+    public static bool circuit = false;
 
     // E button options
     public static bool isSelectingEater = false;

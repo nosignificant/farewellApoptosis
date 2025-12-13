@@ -23,8 +23,10 @@ public static class DialogueData
             {
                 "lockedOn", new List<string>
                 {
+                    "",
                     "현재 상태는 상단, 이 생물이 가질 수 있는 다른 상태는 우측에 표기됩니다.",
                     "Tab키를 한 번 더 눌러 관찰을 중지하십시오.",
+                    "",
                     "다음은 생물 부화기입니다.",
                     "생물 부화기는 시설에 필요한 기초 생물들을 부화시킵니다.",
                     "E키로 부화기를 열고 A, D 키로 생물 부화기를 조작하십시오."
@@ -32,6 +34,7 @@ public static class DialogueData
             },
                 {"hasCircuit", new List<string>
                 {
+                    "",
                     "생물 부화기는 회로를 연결, 조작해 다양한 생물을 탄생시킵니다.",
                     "회로를 분리하고 ESC키를 눌러 조작을 중지하십시오.",
                 }
