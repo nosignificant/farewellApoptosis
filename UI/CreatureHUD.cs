@@ -21,16 +21,19 @@ public class CreatureHUD : MonoBehaviour
     public TMP_Text statusText;
 
     private Camera mainCam;
-    private CanvasGroup canvasGroup;
+    public CanvasGroup canvasGroup;
     public Collider targetCollider;
 
     // 3D 박스의 8개 모서리를 계산하기 위한 배열 미리 할당
     private Vector3[] corners = new Vector3[8];
+    public float minX = float.MaxValue; public float maxX = float.MinValue;
+    public float minY = float.MaxValue; public float maxY = float.MinValue;
+
+    private Vector3 centerScreenPos;
 
     void Start()
     {
         mainCam = Camera.main;
-        if (mainCam == null) mainCam = FindObjectOfType<Camera>();
 
         creatureBoxRect = GetComponent<RectTransform>();
         canvasGroup = GetComponent<CanvasGroup>();
@@ -57,7 +60,7 @@ public class CreatureHUD : MonoBehaviour
         // 1. 거리 및 화면 뒤 체크 pos - pos = dist 
         float dist = Vector3.Distance(mainCam.transform.position, targetCreature.transform.position);
         // 중심좌표 // world >> screen 좌표 , 스크린 좌표로 바꿔놨기때문에 z좌표는 카메라랑 거리 
-        Vector3 centerScreenPos = mainCam.WorldToScreenPoint(targetCollider.bounds.center);
+        centerScreenPos = mainCam.WorldToScreenPoint(targetCollider.bounds.center);
 
         // 거리가 너무 멀거나, 카메라 뒤에 있으면 숨김
         if (dist > maxVisibleDistance || dist < minVisibleDistance || centerScreenPos.z < 0)
@@ -71,6 +74,11 @@ public class CreatureHUD : MonoBehaviour
 
         Bounds b = targetCollider.bounds;
 
+        minX = float.MaxValue;
+        maxX = float.MinValue;
+        minY = float.MaxValue;
+        maxY = float.MinValue;
+
         // 8개 모서리 좌표
         corners[0] = new Vector3(b.min.x, b.min.y, b.min.z);
         corners[1] = new Vector3(b.min.x, b.min.y, b.max.z);
@@ -81,8 +89,6 @@ public class CreatureHUD : MonoBehaviour
         corners[6] = new Vector3(b.max.x, b.max.y, b.min.z);
         corners[7] = new Vector3(b.max.x, b.max.y, b.max.z);
 
-        float minX = float.MaxValue; float maxX = float.MinValue;
-        float minY = float.MaxValue; float maxY = float.MinValue;
 
         for (int i = 0; i < 8; i++)
         {

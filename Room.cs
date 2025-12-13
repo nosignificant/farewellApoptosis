@@ -72,7 +72,6 @@ public class Room : MonoBehaviour
         if (!allSpawners.Contains(spawner))
         {
             allSpawners.Add(spawner);
-            Debug.Log($"Spawner registered to Room: {roomID}");
         }
     }
 }

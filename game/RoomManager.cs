@@ -4,8 +4,6 @@ using System.Collections.Generic;
 public class RoomManager : MonoBehaviour
 {
     public static RoomManager Instance; // 싱글톤
-
-    // ID로 방을 빠르게 찾기 위한 딕셔너리
     private Dictionary<string, Room> allRooms = new Dictionary<string, Room>();
     void Awake()
     {

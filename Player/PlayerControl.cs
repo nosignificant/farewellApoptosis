@@ -78,7 +78,6 @@ public class PlayerControl : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (!canMove) return;
         MoveLogicSnappy();
     }
 
@@ -148,23 +147,39 @@ public class PlayerControl : MonoBehaviour
 
     void MoveLogicSnappy()
     {
-        float h = Input.GetAxisRaw("Horizontal");
-        float v = Input.GetAxisRaw("Vertical");
+        if (canMove)
+        {
+            float h = Input.GetAxisRaw("Horizontal");
+            float v = Input.GetAxisRaw("Vertical");
+            float currentSpeed = moveSpeed;
 
-        Vector3 camFwd = cameraTransform.forward;
-        Vector3 camRight = cameraTransform.right;
-        camFwd.y = 0; camRight.y = 0;
-        camFwd.Normalize(); camRight.Normalize();
+            Vector3 camFwd = cameraTransform.forward;
+            Vector3 camRight = cameraTransform.right;
+            camFwd.y = 0; camRight.y = 0;
+            camFwd.Normalize(); camRight.Normalize();
 
-        Vector3 moveDir = (camFwd * v + camRight * h).normalized;
-        Vector3 targetVel = moveDir * moveSpeed;
-        targetVel.y = rb.linearVelocity.y;
+            Vector3 moveDir = (camFwd * v + camRight * h).normalized;
+            if (Input.GetKey(KeyCode.LeftShift)) currentSpeed += moveSpeed * 1.2f;
+            Vector3 targetVel = moveDir * currentSpeed;
+            targetVel.y = rb.linearVelocity.y;
 
-        rb.linearVelocity = targetVel;
+            rb.linearVelocity = targetVel;
+        }
+        else { rb.linearVelocity = new Vector3(0, rb.linearVelocity.y, 0); }
     }
 
     void RotationLogic()
     {
+        if (Player.isPlayerLockOn)
+        {
+            rotation.y = transform.eulerAngles.y;
+            float currentX = cameraTransform.localEulerAngles.x;
+            if (currentX > 180) currentX -= 360;
+
+            rotation.x = currentX;
+
+            return;
+        }
         rotation.y += Input.GetAxis("Mouse X") * lookSpeed;
         rotation.x += -Input.GetAxis("Mouse Y") * lookSpeed;
         rotation.x = Mathf.Clamp(rotation.x, -lookXLimit, lookXLimit);
@@ -192,7 +207,11 @@ public class PlayerControl : MonoBehaviour
     public static void setPlayerMove(bool onOff)
     {
         canMove = onOff;
-        if (onOff == false) { Cursor.lockState = CursorLockMode.Locked; Cursor.visible = false; }
+        if (onOff == false)
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
         else { Cursor.lockState = CursorLockMode.None; Cursor.visible = true; }
     }
 }

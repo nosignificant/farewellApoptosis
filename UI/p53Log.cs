@@ -22,9 +22,6 @@ public class p53Log : MonoBehaviour
     private Coroutine dialogueCoroutine;
     private string lastConditionKey = "";
     private List<string> readDialog = new List<string>();
-
-    private bool isFinished = true;
-
     // 이벤트
     public static event Action<string, string> OnRoomConditionMet;
     void OnEnable()
@@ -42,7 +39,6 @@ public class p53Log : MonoBehaviour
     {    //방 등록 
         var currentRoom = Util.FindCurrentRoom(this.transform.position);
         if (currentRoom != null) roomID = currentRoom.roomID;
-        if (dialogueCoroutine == null) isFinished = true;
     }
 
     void Update()
@@ -70,7 +66,6 @@ public class p53Log : MonoBehaviour
 
         if (currentRoomLines != null && currentRoomLines.Count > 0)
         {
-            isFinished = false;
             dialogueCoroutine = StartCoroutine(Dialog(conditionKey));
         }
     }
@@ -100,8 +95,6 @@ public class p53Log : MonoBehaviour
                 yield return null;
             }
         }
-
-        isFinished = true;
     }
 
     string CheckCurrentCondition()

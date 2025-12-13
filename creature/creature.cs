@@ -355,7 +355,7 @@ public class Creature : MonoBehaviour
     void CreateHUD()
     {
         if (uiPrefab == null) return;
-        Canvas canvas = FindObjectOfType<Canvas>();
+        Canvas canvas = Object.FindAnyObjectByType<Canvas>();
 
         if (canvas != null)
         {
@@ -373,5 +373,19 @@ public class Creature : MonoBehaviour
             Debug.LogError("씬에 Canvas가 없습니다! UI를 생성할 수 없습니다.");
         }
     }
+    public bool IsInScreenCenter(Vector2 playerScreenPos)
+    {
+        if (myHUD.canvasGroup.alpha == 0) return false;
+
+        float padding = 50f;
+
+        if (playerScreenPos.x >= myHUD.minX - padding && playerScreenPos.x <= myHUD.maxX + padding &&
+            playerScreenPos.y >= myHUD.minY - padding && playerScreenPos.y <= myHUD.maxY + padding)
+        {
+            return true;
+        }
+        return false;
+    }
+
 }
 

@@ -10,8 +10,12 @@ public class Player : MonoBehaviour
     public GameObject pressE;
     public GameObject pressF;
     public Spawner Spawner;
+
+    public PlayerLockOn playerLockOn;
     public EaterSelectorUI eaterSelector;
     public static bool isEaterSelectOpen = false;
+
+    public static bool isPlayerLockOn = false;
     public static bool circuit = false;
 
     // E button options
@@ -41,6 +45,7 @@ public class Player : MonoBehaviour
         PressF();
         PressEsc();
         SyncUI();
+        PressTab();
     }
 
     void OnTriggerEnter(Collider other)
@@ -119,7 +124,11 @@ public class Player : MonoBehaviour
                 PlayerControl.setPlayerMove(true);
                 PressEOnOff(true);
             }
-
+            if (isPlayerLockOn)
+            {
+                isPlayerLockOn = false;
+                playerLockOn.LockOnOff(false);
+            }
         }
     }
     void SyncUI()
@@ -150,8 +159,38 @@ public class Player : MonoBehaviour
     void PressEOnOff(bool onOff)
     {
         if (Spawner)
+        {
             Spawner.isPlayerIn = onOff;
-        pressE.SetActive(onOff);
+            pressE.SetActive(onOff);
+        }
     }
 
+    void PressTab()
+    {
+        if (Input.GetKeyDown(KeyCode.Tab))
+        {
+            if (isPlayerLockOn == false)
+            {
+                // 1. 켜기 시도
+                bool found = playerLockOn.LockOnOff(true);
+
+                if (found)
+                {
+                    isPlayerLockOn = true;
+                    Debug.Log("success :" + playerLockOn.targetCreature);
+                }
+                else
+                {
+                    isPlayerLockOn = false;
+                    Debug.Log("No Creature (화면 중앙에 생물이 없음)");
+                }
+            }
+            else
+            {
+                // 2. 끄기
+                isPlayerLockOn = false;
+                playerLockOn.LockOnOff(false);
+            }
+        }
+    }
 }
