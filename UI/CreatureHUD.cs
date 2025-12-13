@@ -17,7 +17,6 @@ public class CreatureHUD : MonoBehaviour
 
     [Header("UI 컴포넌트")]
     public RectTransform creatureBoxRect; // 큰 박스
-    public RectTransform statusBoxRect;   // 상태 박스
     public TMP_Text statusText;
 
     private Camera mainCam;
@@ -42,10 +41,6 @@ public class CreatureHUD : MonoBehaviour
         canvasGroup = GetComponent<CanvasGroup>();
         if (canvasGroup == null) canvasGroup = gameObject.AddComponent<CanvasGroup>();
 
-        if (statusBoxRect == null && transform.childCount > 0)
-        {
-            statusBoxRect = transform.GetChild(0).GetComponent<RectTransform>();
-        }
         if (targetCreature != null)
         {
             targetCollider = targetCreature.GetComponent<Collider>();
@@ -115,6 +110,6 @@ public class CreatureHUD : MonoBehaviour
         Vector3 screenCenter = mainCam.WorldToScreenPoint(targetCollider.bounds.center);
         creatureBoxRect.position = screenCenter;
 
-        if (statusText != null) statusText.text = targetCreature.creature_statues ?? "";
+        if (statusText != null) statusText.text = targetCreature.statues ?? "";
     }
 }

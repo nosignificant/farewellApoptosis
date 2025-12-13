@@ -111,7 +111,7 @@ public class p53Log : MonoBehaviour
             if (linkedSpawner != null && linkedSpawner.SpawnerHasCircuit)
                 return "repaired";
         }
-        if (roomID == "tut_05")
+        if (roomID == "tut_04")
         {
             if (CurrentSentient.Instance != null)
             {

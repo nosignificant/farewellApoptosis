@@ -79,8 +79,6 @@ public class Spawner : MonoBehaviour, IInteractable
             {
                 Debug.LogWarning(currentRoom.roomID + "Wander Boundary 콜라이더가 스포너에 할당되지 않았습니다! Eater는 영역 제한 없이 배회합니다.");
             }
-            // --------------------------------------------------------
-
             spawnedEaters.Add(go);
         }
     }

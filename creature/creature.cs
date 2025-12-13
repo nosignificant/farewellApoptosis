@@ -7,7 +7,6 @@ public class Creature : MonoBehaviour
     [Header("CREATURE ID")]
     public int CREATURE_ID;
 
-
     [Header("Base Settings")]
     public float speed;
     public float foodSpeed;
@@ -55,8 +54,17 @@ public class Creature : MonoBehaviour
     [Header("UI Settings")]
     public GameObject uiPrefab;
     public float uiOffsetY = 2.0f;
-    public string creature_statues = null;
     private CreatureHUD myHUD;
+
+    public string statues = null;
+
+    public enum CreatureState
+    {
+        Wandering,
+        Eating,
+        Attacking,
+        Fleeing
+    }
 
 
     protected virtual void Start()
@@ -149,7 +157,6 @@ public class Creature : MonoBehaviour
         if (nearestFood == null || isEating) return;
 
         isEating = true;
-        creature_statues = "eating";
 
         // 💡 공통 코루틴 실행: "음식한테 가서 -> 먹어라(TakeBite)"
         StartCoroutine(ChaseAndInteractRoutine(nearestFood.gameObject, 8f, () =>
@@ -170,7 +177,11 @@ public class Creature : MonoBehaviour
     }
     protected virtual void Die()
     {
-        Destroy(gameObject); // 기본 사망 로직
+        Destroy(gameObject);
+        if (currentRoom != null)
+        {
+            currentRoom.OnCreatureExit(this);
+        }
     }
 
 
@@ -179,7 +190,6 @@ public class Creature : MonoBehaviour
     {
         if (nearestEnemy == null) return;
         isAttacking = true;
-        creature_statues = "attacking";
 
         Vector3 dirToEnemy = Util.GetDirectionTo(this.transform, nearestEnemy.transform);
 
@@ -193,7 +203,6 @@ public class Creature : MonoBehaviour
         }
         else
         {
-            creature_statues = "flee";
             Util.moveBack(this.transform, speed, dirToEnemy, fleeSpeed);
         }
     }
@@ -325,30 +334,19 @@ public class Creature : MonoBehaviour
 
     protected void UpdateStatusString()
     {
-        if (isEating)
-        {
-            creature_statues = "Eating";
-        }
-        else if (isAttacking)
-        {
-            creature_statues = "Attacking";
-        }
-        else if (nearestEnemy != null && friends.Count < runAway) // 도망 조건
-        {
-            creature_statues = "Fleeing";
-        }
-        else if (nearestEnemy != null) // 추격 조건 (공격 전)
-        {
-            creature_statues = "Chasing Enemy";
-        }
-        else if (nearestFood != null) // 먹이 발견 (먹기 전)
-        {
-            creature_statues = "Chasing Food";
-        }
-        else
-        {
-            creature_statues = "Wandering";
-        }
+        CreatureState currentState = GetCurrentState();
+        statues = currentState.ToString();
+    }
+
+    public CreatureState GetCurrentState()
+    {
+        if (isEating) return CreatureState.Eating;
+        if (isAttacking) return CreatureState.Attacking;
+
+        // 도망 조건
+        if (nearestEnemy != null && friends.Count < runAway) return CreatureState.Fleeing;
+
+        return CreatureState.Wandering; // 기본값
     }
 
     // ---------------------- CreateHUD ------------------------
