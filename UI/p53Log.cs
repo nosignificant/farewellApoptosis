@@ -8,12 +8,7 @@ using System;
 public class p53Log : MonoBehaviour
 {
     public ChatLog chatLog;
-    private bool isPlayerIn = false;
     [SerializeField] private float delay = 2f;
-
-    [Header("Room Settings")]
-    public string roomID;
-    public Spawner linkedSpawner;
 
     [Header("Dialogue State")]
     public int chatLogLine = 0;
@@ -22,51 +17,44 @@ public class p53Log : MonoBehaviour
     private Coroutine dialogueCoroutine;
     private string lastConditionKey = "";
     private List<string> readDialog = new List<string>();
-    // 이벤트
-    public static event Action<string, string> OnRoomConditionMet;
-    void OnEnable()
-    {
-        if (Player.Instance != null)
-            Player.Instance.OnPlayerRoom += SetIsPlayerIn;
-    }
 
-    void OnDisable()
-    {
-        if (Player.Instance != null)
-            Player.Instance.OnPlayerRoom -= SetIsPlayerIn;
-    }
-    void Start()
-    {    //방 등록 
-        var currentRoom = Util.FindCurrentRoom(this.transform.position);
-        if (currentRoom != null) roomID = currentRoom.roomID;
-    }
+    public static event Action<string, string> OnRoomConditionMet;
 
     void Update()
     {
-        if (isPlayerIn && Player.Instance.roomID == roomID)
+        if (Player.Instance == null) return;
+
+        string currentPlayerRoom = Player.Instance.roomID;
+
+        if (!string.IsNullOrEmpty(currentPlayerRoom))
         {
-            string newConditionkey = CheckCurrentCondition();
+            string newConditionkey = CheckCurrentCondition(currentPlayerRoom);
 
             if (newConditionkey != lastConditionKey && !readDialog.Contains(newConditionkey))
             {
                 lastConditionKey = newConditionkey;
-                OnRoomConditionMet?.Invoke(roomID, newConditionkey);
-                StartDialog(newConditionkey);
+                OnRoomConditionMet?.Invoke(currentPlayerRoom, newConditionkey);
+
+                StartDialog(newConditionkey, currentPlayerRoom);
             }
         }
-        else { StopDialog(); }
+        else
+        {
+            StopDialog();
+        }
     }
 
-    void StartDialog(string conditionKey)
+    // 인자 추가: 대사를 가져올 방 ID
+    void StartDialog(string conditionKey, string targetRoomID)
     {
         if (dialogueCoroutine != null) StopDialog();
 
-        currentRoomLines = DialogueData.GetDialogueLines(roomID, conditionKey);
+        currentRoomLines = DialogueData.GetDialogueLines(targetRoomID, conditionKey);
         chatLogLine = 0;
 
         if (currentRoomLines != null && currentRoomLines.Count > 0)
         {
-            dialogueCoroutine = StartCoroutine(Dialog(conditionKey));
+            dialogueCoroutine = StartCoroutine(Dialog(conditionKey, targetRoomID));
         }
     }
 
@@ -78,7 +66,8 @@ public class p53Log : MonoBehaviour
             dialogueCoroutine = null;
         }
     }
-    IEnumerator Dialog(string key)
+
+    IEnumerator Dialog(string key, string checkRoomID)
     {
         if (!readDialog.Contains(key)) readDialog.Add(lastConditionKey);
 
@@ -90,46 +79,39 @@ public class p53Log : MonoBehaviour
             float t = 0f;
             while (t < delay)
             {
-                if (!isPlayerIn) yield break;
+
+                if (Player.Instance.roomID != checkRoomID) yield break;
+
                 t += Time.deltaTime;
                 yield return null;
             }
         }
     }
 
-    string CheckCurrentCondition()
+    string CheckCurrentCondition(string currentRoomName)
     {
-        if (roomID == "tut_00")
-        {
-            if (Player.circuit) return "hasCircuit";
-            if (Player.isPlayerLockOn) return "lockedOn";
-
-        }
-
-        if (roomID == "tut_01")
-        {
-            if (linkedSpawner != null && linkedSpawner.SpawnerHasCircuit)
-                return "repaired";
-        }
-        if (roomID == "tut_04")
+        if (currentRoomName == "tut_04")
         {
             if (CurrentSentient.Instance != null)
             {
-                Debug.Log("current sentient !! " + CurrentSentient.Instance.GetSentientCount(0));
-                if (CurrentSentient.Instance.GetSentientCount(0) > 0) return "endTutorial";
+                if (CurrentSentient.Instance.GetSentientCount(0) > 0)
+                    return "endTutorial";
             }
-
         }
+
+        if (currentRoomName == "tut_00")
+        {
+            if (Player.circuit) return "hasCircuit";
+            if (Player.isPlayerLockOn) return "lockedOn";
+        }
+
+        if (currentRoomName == "tut_01")
+        {
+            if (RoomManager.Instance != null &&
+            RoomManager.Instance.GetRoom(currentRoomName).allSpawners[0].SpawnerHasCircuit)
+                return "repaired";
+        }
+
         return "startEvent";
     }
-
-    void SetIsPlayerIn(string roomID)
-    {
-        if (Player.Instance.roomID == roomID)
-            isPlayerIn = true;
-        else isPlayerIn = false;
-        Debug.Log("is player " + roomID + isPlayerIn);
-    }
-
-
 }

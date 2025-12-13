@@ -16,7 +16,7 @@ public class Player : MonoBehaviour
     public static bool isEaterSelectOpen = false;
 
     public static bool isPlayerLockOn = false;
-    public static bool circuit = false;
+    public static bool circuit = true;
 
     // E button options
     public static bool isSelectingEater = false;
@@ -26,10 +26,6 @@ public class Player : MonoBehaviour
 
     public string roomID;
 
-    //player status
-    public string nowPlayerDoing = null;
-
-    public event Action<string> OnPlayerRoom;
 
     void Awake()
     {
@@ -64,7 +60,6 @@ public class Player : MonoBehaviour
             if (currentRoom != null && this.currentRoom.roomID == other.name) return;
             if (RoomManager.Instance != null) currentRoom = RoomManager.Instance.GetRoom(other.name);
             roomID = currentRoom.roomID;
-            OnPlayerRoom?.Invoke(roomID);
         }
     }
 
