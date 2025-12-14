@@ -49,11 +49,13 @@ public class CreatureHUD : MonoBehaviour
 
     void LateUpdate()
     {
-        if (targetCreature == null || targetCollider == null) return;
+        if (targetCreature == null || targetCollider == null)
+        {
+            Destroy(gameObject);
+            return; // 함수 종료
+        }
 
         CalculateBoxCoordinates();
-
-
 
         if (playerLockOn != null && playerLockOn.targetCreature == this.targetCreature)
         {

@@ -4,14 +4,13 @@ using System.Collections.Generic;
 using UnityEngine.UI;
 using TMPro;
 
-public class Spawner : MonoBehaviour, IInteractable
+public class Spawner : Creature, IInteractable
 {
     //스포너들
     public GameObject[] eaterPrefabs;
     public int spawnPrefabIndex = 0;
     public int spawnCount = 5;
     public float spawnRadius = 5f;
-
     public List<GameObject> spawnedEaters = new List<GameObject>();
 
     // UI setting 
@@ -19,9 +18,7 @@ public class Spawner : MonoBehaviour, IInteractable
 
     public GameObject eaterSelector;
 
-    // circuit
-    [SerializeField]
-    private bool _spawnerHasCircuit = true;
+    [SerializeField] private bool _spawnerHasCircuit = false;
 
     // 2. 외부에서 접근할 '프로퍼티' (public)
     public bool SpawnerHasCircuit
@@ -39,24 +36,34 @@ public class Spawner : MonoBehaviour, IInteractable
             }
         }
     }
-    //Room setting 
-    public Room currentRoom;
-
     void Start()
     {
         currentRoom = Util.FindCurrentRoom(transform.position);
-        if (SpawnerHasCircuit) AutoSpawn();
         if (currentRoom != null)
+        {
+            currentRoom.OnCreatureEnter(this);
             currentRoom.RegisterSpawner(this);
+
+        }
+
+        if (SpawnerHasCircuit) AutoSpawn();
     }
 
-    void Update()
+    protected override void Update()
     {
         if (SpawnerHasCircuit && spawnedEaters.Count == 0)
         {
             AutoSpawn();
         }
         // 나중에 하세요 if (!SpawnerHasCircuit && spawnedEaters.Count != 0) StartCoroutine(DestroyAll());
+    }
+
+    protected new void UpdateStatusString() // 혹은 override
+    {
+        if (SpawnerHasCircuit)
+            statues = "Operating (Active)"; // 작동 중
+        else
+            statues = "No Circuit (Inactive)"; // 꺼짐
     }
     public void AutoSpawn()
     {
@@ -114,7 +121,10 @@ public class Spawner : MonoBehaviour, IInteractable
         foreach (var eater in spawnedEaters)
         {
             if (eater != null)
+            {
                 Destroy(eater);
+
+            }
             yield return new WaitForSeconds(0.1f);
         }
         spawnedEaters.Clear();

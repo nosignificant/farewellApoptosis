@@ -159,7 +159,7 @@ public class Creature : MonoBehaviour
         isEating = true;
 
         // 💡 공통 코루틴 실행: "음식한테 가서 -> 먹어라(TakeBite)"
-        StartCoroutine(ChaseAndInteractRoutine(nearestFood.gameObject, 8f, () =>
+        StartCoroutine(ChaseAndInteractRoutine(nearestFood.gameObject, 7f, () =>
         {
             nearestFood.TakeDamage(1);
         }));

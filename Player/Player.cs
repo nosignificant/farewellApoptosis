@@ -78,22 +78,23 @@ public class Player : MonoBehaviour
     }
 
     void PressE()
-    { //플레이어가 e를 누를 수 있는 상태에서 e를 누르면 
+    {
+        if (Spawner != null)
+        {
+            if (isEaterSelectOpen && !Spawner.SpawnerHasCircuit) PressEOnOff(false);
+            else PressEOnOff(true);
+        }
+
         if (Input.GetKeyDown(KeyCode.E))
-        { //플레이어가 반경내에 있는 상태의 스포너는 eaterSelector에서 조작? 
-            if (Spawner != null && Spawner.isPlayerIn)
+        {
+            if (!isEaterSelectOpen && Spawner != null && Spawner.isPlayerIn)
             {
                 isEaterSelectOpen = true;
                 PlayerControl.setPlayerMove(false);
                 EaterSelectorUIOnOff(isEaterSelectOpen);
-                //eaterselector UI에 플레이어가 상호작용중인 스포너 설정
                 eaterSelector.SetSpawner(Spawner);
             }
         }
-        if (Spawner != null)
-            if (isEaterSelectOpen && !Spawner.SpawnerHasCircuit) PressEOnOff(false);
-            else PressEOnOff(true);
-
     }
 
     void PressF()

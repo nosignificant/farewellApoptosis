@@ -5,87 +5,105 @@ using TMPro;
 
 public class EaterSelectorUI : MonoBehaviour
 {
-    public Spawner spawner;      // 스포너 참조
-    public GameObject eaterSelector;  // 패널
-    public GameObject[] cursors;      // 커서들 (0~3)
-    public TMP_Text nowPrefabText;    // "now producing: X"
-    public int selectedIndex = 0; // EaterSelectorUI 안에 필드로 두기
+    public Spawner spawner;
+    public GameObject eaterSelector;
+    public TMP_Text nowPrefabText;
+    public TMP_Text indexText;
+
+    public int selectedIndex = 0;
+
+    private int currentProducingIndex = 0;
+
+    public GameObject[] models;
 
     void OnEnable()
     {
         InitializeSelector();
     }
+
+    void OnDisable()
+    {
+        foreach (GameObject model in models)
+            if (model != null) model.SetActive(false);
+    }
+
     void Update()
     {
-        UpdatePrefabNum();
-        ConfirmWithE();
-        if (Input.GetKeyDown(KeyCode.A)) Debug.Log("keydown A from eaterSelector");
-        else if (Input.GetKeyDown(KeyCode.D)) Debug.Log("keydown D from eaterSelector");
-    }
-    void UpdatePrefabNum()
-    {
         if (spawner == null) return;
-        if (!spawner.isPlayerIn) return;
-        if (!spawner.SpawnerHasCircuit) return;
-        int delta = 0;
+        if (!spawner.isPlayerIn || !spawner.SpawnerHasCircuit) return;
 
-        if (Input.GetKeyDown(KeyCode.A)) delta = -1;
-        else if (Input.GetKeyDown(KeyCode.D)) delta = 1;
+        if (Input.GetKeyDown(KeyCode.A))
+        {
+            ChangeSelection(-1);
+        }
+        else if (Input.GetKeyDown(KeyCode.D))
+        {
+            ChangeSelection(1);
+        }
+        else if (Input.GetKeyDown(KeyCode.E) && Player.isSelectingEater)
+        {
+            ConfirmSelection();
+        }
+    }
 
-        if (delta == 0) return;
-
-        int max = spawner.eaterPrefabs.Length;
+    void ChangeSelection(int direction)
+    {
+        int max = models.Length;
         if (max == 0) return;
 
-        selectedIndex = (selectedIndex + delta + max) % max;
+        selectedIndex = (selectedIndex + direction + max) % max;
+        indexText.text = selectedIndex.ToString();
 
-        int humanIndex = selectedIndex + 1;
-        if (nowPrefabText != null)
-            nowPrefabText.text = $"now producing: {humanIndex}";
-
-        SetCursor(selectedIndex);
+        UpdateVisuals();
     }
 
     public void InitializeSelector()
     {
         if (spawner == null) return;
 
-        // 1. 스포너의 현재 인덱스를 selectedIndex에 반영합니다.
         selectedIndex = spawner.spawnPrefabIndex;
 
-        // 2. 해당 인덱스로 UI를 즉시 업데이트합니다.
-        SetCursor(selectedIndex);
+        if (models.Length > 0)
+            selectedIndex = Mathf.Clamp(selectedIndex, 0, models.Length - 1);
 
-        // 3. 텍스트도 업데이트합니다.
-        int humanIndex = selectedIndex + 1;
-
+        UpdateVisuals();
     }
 
-    void SetCursor(int index)
+    void UpdateVisuals()
     {
-        for (int i = 0; i < cursors.Length; i++)
-        {
-            if (cursors[i] != null)
-                cursors[i].SetActive(i == index);
-        }
-    }
-    void ConfirmWithE()
-    {
-        if (!spawner.isPlayerIn) return;
-        if (spawner == null) return;
+        // 1. 내가 선택 중인 번호 (Index Text)
+        if (indexText != null)
+            indexText.text = selectedIndex.ToString();
 
-        if (Input.GetKeyDown(KeyCode.E) && Player.isSelectingEater)
+        for (int i = 0; i < models.Length; i++)
         {
-            spawner.ReplaceAllWith(selectedIndex);
+            if (models[i] != null)
+                models[i].SetActive(i == selectedIndex);
         }
+
+        // 3. 현재 생산 중인 정보 텍스트
         if (nowPrefabText != null)
-            nowPrefabText.text = $"now producing: {selectedIndex}";
+        {
+            if (!spawner.SpawnerHasCircuit)
+                nowPrefabText.text = "No Circuit";
+            else
+                nowPrefabText.text = $"Current: {currentProducingIndex}";
+        }
+    }
+
+    void ConfirmSelection()
+    {
+        spawner.ReplaceAllWith(selectedIndex);
+        currentProducingIndex = selectedIndex;
+        UpdateVisuals();
     }
 
     public void SetSpawner(Spawner spawnerObject)
     {
         this.spawner = spawnerObject;
+        InitializeSelector();
     }
+
     public void cleanSpawner()
     {
         this.spawner = null;
