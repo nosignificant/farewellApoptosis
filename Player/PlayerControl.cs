@@ -11,6 +11,10 @@ public class PlayerControl : MonoBehaviour
     public float jumpForce = 5.0f;
     public LayerMask groundLayer;
 
+    // [추가됨] 중력 배수 설정 (기본 1.0, 2.5 정도면 묵직하게 떨어짐)
+    [Header("중력 설정")]
+    public float gravityMultiplier = 2.5f;
+
     [Header("엔더 진주 설정")]
     public Throw pearlPrefab;
     public Transform throwPoint;
@@ -18,13 +22,10 @@ public class PlayerControl : MonoBehaviour
     [Header("던지기 설정")]
     public float minThrowForce = 10f;
     public float maxThrowForce = 40f;
-    public float maxChargeTime = 2.0f; // 💡 1초 이상 눌러야 하니까 최대 시간도 좀 늘려두는 게 좋습니다.
+    public float maxChargeTime = 2.0f;
 
-    [Header("안전 장치 (새로 추가됨)")]
-    [Tooltip("이 시간보다 짧게 누르면 던지지 않고 취소됩니다.")]
-    public float minHoldTime = 1.0f; // 💡 1초 미만 클릭은 무시
-
-    [Tooltip("이 거리 이상 날아가면 공중에서 터지고 이동함")]
+    [Header("안전 장치")]
+    public float minHoldTime = 1.0f;
     public float maxTeleportRange = 30.0f;
 
     [Header("공중 제한 설정")]
@@ -79,11 +80,24 @@ public class PlayerControl : MonoBehaviour
     void FixedUpdate()
     {
         MoveLogicSnappy();
+        ApplyExtraGravity(); // [추가됨] 추가 중력 적용 함수 호출
+    }
+
+    // [추가됨] 유니티 기본 중력에 더해 추가적인 힘을 가함
+    void ApplyExtraGravity()
+    {
+        // 땅에 없을 때만 더 강하게 당김
+        if (!isGrounded)
+        {
+            // 기본 중력 * (배수 - 1) 만큼의 힘을 추가로 가함
+            // ForceMode.Acceleration을 사용하여 질량과 무관하게 적용
+            Vector3 extraGravityForce = Physics.gravity * (gravityMultiplier - 1.0f);
+            rb.AddForce(extraGravityForce, ForceMode.Acceleration);
+        }
     }
 
     void HandleThrow()
     {
-        // 1. 클릭 시작
         if (Input.GetMouseButtonDown(0))
         {
             if (isGrounded || currentAirThrows < maxAirThrows)
@@ -93,24 +107,16 @@ public class PlayerControl : MonoBehaviour
             }
         }
 
-        // 2. 누르는 중
         if (isCharging && Input.GetMouseButton(0))
         {
             currentChargeTime += Time.deltaTime;
         }
 
-        // 3. 손을 뗐을 때 (조건 검사)
         if (isCharging && Input.GetMouseButtonUp(0))
         {
-            // 💡 [핵심] 누른 시간이 1초(minHoldTime)보다 길어야만 발사!
             if (currentChargeTime >= minHoldTime)
             {
                 ThrowPearl();
-            }
-            else
-            {
-                // 1초 미만이면 그냥 취소 (아무 일도 안 일어남)
-                // Debug.Log("너무 짧게 눌러서 취소됨");
             }
 
             isCharging = false;
@@ -161,6 +167,8 @@ public class PlayerControl : MonoBehaviour
             Vector3 moveDir = (camFwd * v + camRight * h).normalized;
             if (Input.GetKey(KeyCode.LeftShift)) currentSpeed += moveSpeed * 1.2f;
             Vector3 targetVel = moveDir * currentSpeed;
+
+            // 기존 속도의 Y값을 유지
             targetVel.y = rb.linearVelocity.y;
 
             rb.linearVelocity = targetVel;

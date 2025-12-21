@@ -15,7 +15,12 @@ public class p53Log : MonoBehaviour
 
     private List<string> currentRoomLines;
     private Coroutine dialogueCoroutine;
+
+    // [수정 1] 방이 바뀌었는지 확인하기 위한 변수 추가
+    private string lastRoomID = "";
     private string lastConditionKey = "";
+
+    // [수정 2] 읽은 대화를 "방ID_키값" 형태로 저장하여 중복 방지
     private List<string> readDialog = new List<string>();
 
     public static event Action<string, string> OnRoomConditionMet;
@@ -28,9 +33,20 @@ public class p53Log : MonoBehaviour
 
         if (!string.IsNullOrEmpty(currentPlayerRoom))
         {
+            // [수정 3] 방이 바뀌었으면 이전 상태 키를 초기화해서 같은 키("startEvent")가 또 들어와도 인식하게 함
+            if (currentPlayerRoom != lastRoomID)
+            {
+                lastRoomID = currentPlayerRoom;
+                lastConditionKey = "";
+            }
+
             string newConditionkey = CheckCurrentCondition(currentPlayerRoom);
 
-            if (newConditionkey != lastConditionKey && !readDialog.Contains(newConditionkey))
+            // 읽음 확인용 고유 키 생성 (예: "tut_00_startEvent")
+            string uniqueReadCheckKey = currentPlayerRoom + "_" + newConditionkey;
+
+            // [수정 4] 조건 비교 시 readDialog 체크를 고유 키로 변경
+            if (newConditionkey != lastConditionKey && !readDialog.Contains(uniqueReadCheckKey))
             {
                 lastConditionKey = newConditionkey;
                 OnRoomConditionMet?.Invoke(currentPlayerRoom, newConditionkey);
@@ -44,7 +60,6 @@ public class p53Log : MonoBehaviour
         }
     }
 
-    // 인자 추가: 대사를 가져올 방 ID
     void StartDialog(string conditionKey, string targetRoomID)
     {
         if (dialogueCoroutine != null) StopDialog();
@@ -69,7 +84,9 @@ public class p53Log : MonoBehaviour
 
     IEnumerator Dialog(string key, string checkRoomID)
     {
-        if (!readDialog.Contains(key)) readDialog.Add(lastConditionKey);
+        // [수정 5] 대화를 읽음 처리할 때 "방ID_키값"으로 저장
+        string uniqueKey = checkRoomID + "_" + key;
+        if (!readDialog.Contains(uniqueKey)) readDialog.Add(uniqueKey);
 
         for (int i = chatLogLine; i < currentRoomLines.Count; i++)
         {
@@ -79,7 +96,6 @@ public class p53Log : MonoBehaviour
             float t = 0f;
             while (t < delay)
             {
-
                 if (Player.Instance.roomID != checkRoomID) yield break;
 
                 t += Time.deltaTime;
@@ -90,6 +106,7 @@ public class p53Log : MonoBehaviour
 
     string CheckCurrentCondition(string currentRoomName)
     {
+        // ... (기존 코드와 동일) ...
         if (currentRoomName == "tut_04")
         {
             if (CurrentSentient.Instance != null)
@@ -97,12 +114,14 @@ public class p53Log : MonoBehaviour
                 if (CurrentSentient.Instance.GetSentientCount(0) > 0)
                     return "endTutorial";
             }
+            return "startEvent";
         }
 
         if (currentRoomName == "tut_00")
         {
             if (Player.circuit) return "hasCircuit";
             if (Player.isPlayerLockOn) return "lockedOn";
+            return "startEvent";
         }
 
         if (currentRoomName == "tut_01")
@@ -110,6 +129,7 @@ public class p53Log : MonoBehaviour
             if (RoomManager.Instance != null &&
             RoomManager.Instance.GetRoom(currentRoomName).allSpawners[0].SpawnerHasCircuit)
                 return "repaired";
+            return "startEvent";
         }
 
         return "startEvent";
